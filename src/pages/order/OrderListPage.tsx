@@ -8,13 +8,9 @@ import { formatPrice, formatDateTime } from '@/utils/format';
 import { OrderStatus } from '@/types/common';
 
 const STATUS_LABELS: Record<OrderStatus, { text: string; color: string }> = {
-  PENDING: { text: '결제 대기', color: 'bg-gray-100 text-gray-700' },
+  PENDING_PAYMENT: { text: '결제 대기', color: 'bg-gray-100 text-gray-700' },
   PAID: { text: '결제 완료', color: 'bg-blue-100 text-blue-700' },
-  CONFIRMED: { text: '판매자 확인', color: 'bg-indigo-100 text-indigo-700' },
-  SHIPPING: { text: '배송 중', color: 'bg-orange-100 text-orange-700' },
-  DELIVERED: { text: '배송 완료', color: 'bg-green-100 text-green-700' },
   CANCELLED: { text: '취소됨', color: 'bg-red-100 text-red-700' },
-  REFUNDED: { text: '환불됨', color: 'bg-gray-100 text-gray-700' },
 };
 
 export default function OrderListPage() {
@@ -48,14 +44,14 @@ export default function OrderListPage() {
       <div className="space-y-4">
         {data.content.map((order) => {
           const statusInfo = STATUS_LABELS[order.status];
-          const canCancel = order.status === 'PENDING' || order.status === 'PAID';
+          const canCancel = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';
 
           return (
             <div key={order.orderId} className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-xs text-gray-500">{formatDateTime(order.createdAt)}</p>
-                  <p className="text-sm font-medium text-gray-700">주문번호: {order.orderNumber}</p>
+                  <p className="text-sm font-medium text-gray-700">주문 #{order.orderId}</p>
                 </div>
                 <span
                   className={`px-3 py-1 text-xs font-medium rounded-full ${statusInfo.color}`}
@@ -64,34 +60,25 @@ export default function OrderListPage() {
                 </span>
               </div>
 
-              <div className="space-y-3">
-                {order.items.map((item) => (
-                  <div key={item.orderItemId} className="flex gap-3 py-2">
-                    <Link
-                      to={`/products/${item.productId}`}
-                      className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0"
-                    >
-                      {item.thumbnailUrl ? (
-                        <img
-                          src={item.thumbnailUrl}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full" />
-                      )}
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {item.productName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {item.itemName} · {item.quantity}개
-                      </p>
-                      <p className="text-sm font-semibold mt-1">{formatPrice(item.subtotal)}</p>
-                    </div>
-                  </div>
-                ))}
+              {/* 목록 응답은 대표 상품 1건 + 총 수량만 제공 (항목 배열 없음) */}
+              <div className="flex gap-3 py-2">
+                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                  {order.firstItemThumbnail ? (
+                    <img
+                      src={order.firstItemThumbnail}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {order.firstItemName ?? '주문 상품'}
+                  </p>
+                  <p className="text-xs text-gray-500">총 {order.itemCount}개</p>
+                </div>
               </div>
 
               <hr className="my-4" />
@@ -131,7 +118,7 @@ export default function OrderListPage() {
         <div className="flex items-center justify-center gap-2 mt-8">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={data.first}
+            disabled={page <= 0}
             className="btn-secondary text-sm"
           >
             이전
@@ -141,7 +128,7 @@ export default function OrderListPage() {
           </span>
           <button
             onClick={() => setPage((p) => p + 1)}
-            disabled={data.last}
+            disabled={page >= data.totalPages - 1}
             className="btn-secondary text-sm"
           >
             다음

@@ -7,20 +7,18 @@ import {formatDateTime, formatPrice} from '@/utils/format';
 import {DeliveryStatus, OrderStatus} from '@/types/common';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: '결제 대기',
+  PENDING_PAYMENT: '결제 대기',
   PAID: '결제 완료',
-  CONFIRMED: '판매자 확인',
-  SHIPPING: '배송 중',
-  DELIVERED: '배송 완료',
   CANCELLED: '취소됨',
-  REFUNDED: '환불됨',
 };
 
 const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
-  PREPARING: '배송 준비 중',
-  SHIPPED: '발송됨',
-  IN_TRANSIT: '배송 중',
-  DELIVERED: '배송 완료',
+  ACCEPT: '결제 완료',
+  INSTRUCT: '상품 준비 중',
+  DEPARTURE: '배송 지시',
+  DELIVERING: '배송 중',
+  FINAL_DELIVERY: '배송 완료',
+  ORDER_CANCELLED: '주문 취소',
 };
 
 export default function OrderDetailPage() {
@@ -33,7 +31,7 @@ export default function OrderDetailPage() {
 
   if (isLoading || !order) return <PageSpinner />;
 
-  const canCancel = order.status === 'PENDING' || order.status === 'PAID';
+  const canCancel = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -54,25 +52,15 @@ export default function OrderDetailPage() {
           <p className="text-xs text-gray-500">{formatDateTime(order.createdAt)}</p>
         </div>
 
+        {/* 상세 항목 응답엔 productId/썸네일/판매자명이 없음 — itemName·수량·소계만 표시 */}
         <div className="space-y-3">
-          {order.items.map((item) => (
-            <div key={item.orderItemId} className="flex gap-3 py-2">
-              <Link
-                to={`/products/${item.productId}`}
-                className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0"
-              >
-                {item.thumbnailUrl && (
-                  <img src={item.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                )}
-              </Link>
+          {order.orderItems.map((item) => (
+            <div key={item.orderItemId} className="flex gap-3 py-2 items-center">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.productName}</p>
-                <p className="text-xs text-gray-500">
-                  {item.itemName} · {item.quantity}개
-                </p>
-                <p className="text-xs text-gray-400">{item.sellerName}</p>
+                <p className="text-sm font-medium truncate">{item.itemName}</p>
+                <p className="text-xs text-gray-500">{item.quantity}개</p>
               </div>
-              <p className="text-sm font-semibold">{formatPrice(item.subtotal)}</p>
+              <p className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</p>
             </div>
           ))}
         </div>
@@ -87,15 +75,15 @@ export default function OrderDetailPage() {
         <div className="space-y-2 text-sm">
           <p className="flex items-center gap-2">
             <span className="text-gray-500 w-16">받는 분</span>
-            <span className="font-medium">{order.receiverName}</span>
+            <span className="font-medium">{order.receiver.name}</span>
           </p>
           <p className="flex items-center gap-2">
             <Phone size={14} className="text-gray-400" />
-            <span className="font-medium">{order.receiverPhone}</span>
+            <span className="font-medium">{order.receiver.phone}</span>
           </p>
           <p className="flex items-start gap-2">
             <span className="text-gray-500 w-16">주소</span>
-            <span className="font-medium">{order.receiverAddress}</span>
+            <span className="font-medium">{order.receiver.address}</span>
           </p>
         </div>
       </section>
@@ -114,17 +102,15 @@ export default function OrderDetailPage() {
                   <span className="text-sm font-medium">
                     {DELIVERY_STATUS_LABELS[d.status]}
                   </span>
-                  {d.trackingNumber && (
+                  {d.invoiceNumber && (
                     <span className="text-xs text-gray-500">
-                      {d.carrierName} {d.trackingNumber}
+                      {d.deliveryCompany} {d.invoiceNumber}
                     </span>
                   )}
                 </div>
-                {d.shippedAt && (
-                  <p className="text-xs text-gray-500">발송: {formatDateTime(d.shippedAt)}</p>
-                )}
-                {d.deliveredAt && (
-                  <p className="text-xs text-gray-500">완료: {formatDateTime(d.deliveredAt)}</p>
+                <p className="text-xs text-gray-500">{d.itemName}</p>
+                {d.updatedAt && (
+                  <p className="text-xs text-gray-400">업데이트: {formatDateTime(d.updatedAt)}</p>
                 )}
               </div>
             ))}
@@ -142,7 +128,7 @@ export default function OrderDetailPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">배송비</span>
-            <span>{order.shippingFee === 0 ? '무료' : formatPrice(order.shippingFee)}</span>
+            <span>{order.deliveryFee === 0 ? '무료' : formatPrice(order.deliveryFee)}</span>
           </div>
           <hr className="my-2" />
           <div className="flex justify-between text-base font-semibold">

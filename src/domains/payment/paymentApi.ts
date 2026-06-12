@@ -1,29 +1,23 @@
 import { apiClient, ApiResponse } from '@/api/client';
-import { PaymentMethod } from '@/types/common';
+import { OrderStatus } from '@/types/common';
 
+// 백엔드 ApprovePaymentRequest 와 1:1 — orderId, amount 만 받음(결제수단/멱등키 미수신)
 export interface PaymentRequest {
   orderId: number;
-  paymentMethod: PaymentMethod;
   amount: number;
-  idempotencyKey?: string; // 멱등성 키 (중복 결제 방지)
 }
 
+// 백엔드 ApprovePaymentResponse 와 1:1
 export interface PaymentResponse {
-  paymentId: number;
   orderId: number;
-  amount: number;
-  status: 'APPROVED' | 'FAILED' | 'CANCELLED';
+  finalPrice: number;
+  status: OrderStatus;
   paidAt: string;
 }
 
 export const paymentApi = {
   approve: async (data: PaymentRequest): Promise<PaymentResponse> => {
-    // 멱등성 키 자동 생성
-    const payload = {
-      ...data,
-      idempotencyKey: data.idempotencyKey || crypto.randomUUID(),
-    };
-    const res = await apiClient.post<ApiResponse<PaymentResponse>>('/payments', payload);
+    const res = await apiClient.post<ApiResponse<PaymentResponse>>('/payments', data);
     return res.data.data;
   },
 };

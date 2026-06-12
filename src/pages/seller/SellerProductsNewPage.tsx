@@ -81,7 +81,7 @@ export default function SellerProductsNewPage() {
             >
               <option value="">선택해주세요</option>
               {categories?.map((c) => (
-                <option key={c.categoryId} value={c.categoryId}>
+                <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}

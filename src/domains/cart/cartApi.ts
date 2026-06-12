@@ -43,7 +43,7 @@ export interface UpdateCartItemResponse {
 }
 
 export interface AddCartItemRequest {
-  productItemId: number;
+  itemId: number;        // ★ 백엔드 AddCartItemRequest 는 itemId (@NotNull) — productItemId 아님
   quantity: number;
 }
 

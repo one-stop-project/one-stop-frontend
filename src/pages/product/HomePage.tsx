@@ -7,12 +7,12 @@ export default function HomePage() {
   const { data: popular, isLoading: popularLoading } = usePopularProductsQuery(8);
   const { data: latest, isLoading: latestLoading } = useProductListQuery({
     page: 0,
-    size: 8,
+    size: 10, // 백엔드 상품목록 size는 10~20만 허용 (8이면 400)
     sort: 'LATEST',
   });
 
-  // 응답이 깨져도 .map에서 안 터지도록 방어
-  const popularProducts = popular?.content ?? [];
+  // 인기상품은 배열 응답, 목록은 Page 응답
+  const popularProducts = popular ?? [];
   const latestProducts = latest?.content ?? [];
 
   return (
