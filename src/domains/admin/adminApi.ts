@@ -13,12 +13,11 @@ export interface DashboardStats {
 
 export interface AdminProduct {
   productId: number;
+  sellerId: number;
   name: string;
-  sellerName: string;
-  categoryName: string;
-  price: number;
+  description: string;
+  thumbnailUrl: string | null;
   status: ProductStatus;
-  createdAt: string;
 }
 
 export interface AdminSeller {
@@ -46,14 +45,10 @@ export const adminApi = {
     return res.data.data;
   },
 
-  // 상품 관리
-  getProducts: async (
-    page = 0,
-    size = 20,
-    status?: ProductStatus
-  ): Promise<PageResponse<AdminProduct>> => {
+  // 상품 관리 (승인 요청된 상품 목록 — 상태 필터 미지원)
+  getProducts: async (page = 0, size = 20): Promise<PageResponse<AdminProduct>> => {
     const res = await apiClient.get<ApiResponse<PageResponse<AdminProduct>>>('/admin/products', {
-      params: { page, size, status },
+      params: { page, size },
     });
     return res.data.data;
   },

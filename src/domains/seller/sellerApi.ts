@@ -22,13 +22,11 @@ export interface ProductImageDeleteResponse {
 export interface SellerProduct {
   productId: number;
   name: string;
-  description: string;
-  price: number;
-  categoryName: string;
   status: ProductStatus;
   thumbnailUrl: string | null;
-  totalStock: number;
-  createdAt: string;
+  minPrice: number;
+  salesCount: number;
+  categoryNames: string[];
 }
 
 export interface ProductCreateRequest {

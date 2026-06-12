@@ -51,7 +51,7 @@ export default function SellerDashboard() {
                 <div className="w-10 h-10 bg-gray-100 rounded shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{p.name}</p>
-                  <p className="text-xs text-gray-500">{p.categoryName}</p>
+                  <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>
                 </div>
                 <span className="text-xs px-2 py-1 bg-gray-100 rounded">{p.status}</span>
               </div>

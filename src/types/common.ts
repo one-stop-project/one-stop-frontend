@@ -6,8 +6,13 @@ export type UserRole = 'BUYER' | 'SELLER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'WITHDRAWN';
 
-// (판매자/어드민 PR에서 백엔드 값으로 정합 예정 — 이 PR은 구매자 흐름만)
-export type ProductStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'REJECTED';
+// 상품 상태 (BE ProductStatus)
+export type ProductStatus =
+  | 'APPROVE_REQUESTED' // 승인 요청
+  | 'APPROVED' // 승인 완료
+  | 'REJECTED' // 반려
+  | 'DISCONTINUED' // 판매 중단
+  | 'FORCE_INACTIVE'; // 강제 비활성
 
 // 주문 전체 상태 (BE OrderStatus)
 export type OrderStatus =
@@ -35,5 +40,9 @@ export type DeliveryStatus =
 
 export type PaymentMethod = 'MOCK' | 'CARD' | 'POINT';
 
-// (판매자/어드민 PR에서 백엔드 값으로 정합 예정)
-export type SellerStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
+// 판매자 상태 (BE SellerStatus)
+export type SellerStatus =
+  | 'PENDING' // 승인 대기
+  | 'APPROVED' // 승인 완료
+  | 'REJECTED' // 반려
+  | 'SUSPENDED'; // 정지
