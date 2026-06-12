@@ -69,9 +69,9 @@ export default function SellerDashboard() {
           <div className="space-y-3">
             {orders?.content.slice(0, 5).map((o) => (
               <div key={o.orderItemId} className="text-sm border-b pb-2 last:border-0">
-                <p className="font-medium">{o.productName}</p>
+                <p className="font-medium">{o.itemName}</p>
                 <p className="text-xs text-gray-500">
-                  {o.receiverName} · {o.quantity}개
+                  {o.buyerName} · {o.quantity}개
                 </p>
               </div>
             ))}
