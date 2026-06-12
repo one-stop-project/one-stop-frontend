@@ -78,13 +78,13 @@ export function useShipDeliveryMutation() {
   return useMutation({
     mutationFn: ({
       deliveryId,
-      carrierName,
-      trackingNumber,
+      deliveryCompany,
+      invoiceNumber,
     }: {
       deliveryId: number;
-      carrierName: string;
-      trackingNumber: string;
-    }) => sellerApi.shipDelivery(deliveryId, { carrierName, trackingNumber }),
+      deliveryCompany: string;
+      invoiceNumber: string;
+    }) => sellerApi.shipDelivery(deliveryId, { deliveryCompany, invoiceNumber }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
       toast.success('배송이 시작되었습니다.');

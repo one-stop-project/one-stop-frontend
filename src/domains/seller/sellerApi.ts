@@ -1,5 +1,5 @@
 import { apiClient, ApiResponse, PageResponse } from '@/api/client';
-import { ProductStatus } from '@/types/common';
+import { ProductStatus, OrderItemStatus, DeliveryStatus } from '@/types/common';
 import { ProductItem } from '@/domains/product/productApi';
 
 // 백엔드 이미지 관련 응답 (실제 DTO에 맞춤)
@@ -55,14 +55,15 @@ export interface ProductUpdateRequest {
 export interface SellerOrderItem {
   orderItemId: number;
   orderId: number;
-  productName: string;
   itemName: string;
   quantity: number;
   price: number;
-  receiverName: string;
-  shippingAddress: string;
-  status: string;
-  createdAt: string;
+  subtotal: number;
+  buyerName: string;
+  receiverAddress: string;
+  orderItemStatus: OrderItemStatus;
+  deliveryStatus: DeliveryStatus;
+  orderedAt: string;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -126,7 +127,7 @@ export const sellerApi = {
 
   shipDelivery: async (
     deliveryId: number,
-    data: { carrierName: string; trackingNumber: string }
+    data: { deliveryCompany: string; invoiceNumber: string }
   ): Promise<void> => {
     await apiClient.post(`/seller/deliveries/${deliveryId}/ship`, data);
   },

@@ -8,6 +8,16 @@ import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice, formatDateTime } from '@/utils/format';
 
+const ORDER_ITEM_STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: '결제 대기',
+  ORDERED: '주문 접수',
+  CONFIRMED: '확인 완료',
+  SHIPPING: '배송 중',
+  DELIVERED: '배송 완료',
+  CANCELLED: '주문 취소',
+  REJECTED: '주문 거절',
+};
+
 export default function SellerOrdersPage() {
   const [page, setPage] = useState(0);
   const { data, isLoading } = useSellerOrdersQuery(page, 20);
@@ -27,34 +37,34 @@ export default function SellerOrdersPage() {
             <div key={o.orderItemId} className="card p-6">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-xs text-gray-500">{formatDateTime(o.createdAt)}</p>
+                  <p className="text-xs text-gray-500">{formatDateTime(o.orderedAt)}</p>
                   <p className="text-sm font-medium text-gray-700">주문 #{o.orderId}</p>
                 </div>
-                <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">{o.status}</span>
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                  {ORDER_ITEM_STATUS_LABELS[o.orderItemStatus] ?? o.orderItemStatus}
+                </span>
               </div>
 
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{o.productName}</p>
-                  <p className="text-xs text-gray-500">
-                    {o.itemName} · {o.quantity}개
-                  </p>
-                  <p className="text-sm font-semibold mt-1">{formatPrice(o.price * o.quantity)}</p>
+                  <p className="font-medium text-sm">{o.itemName}</p>
+                  <p className="text-xs text-gray-500">{o.quantity}개</p>
+                  <p className="text-sm font-semibold mt-1">{formatPrice(o.subtotal)}</p>
                 </div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3 text-sm mb-4">
                 <p className="text-gray-600">
-                  받는 분: <span className="font-medium text-gray-900">{o.receiverName}</span>
+                  받는 분: <span className="font-medium text-gray-900">{o.buyerName}</span>
                 </p>
                 <p className="text-gray-600 mt-1">
-                  주소: <span className="font-medium text-gray-900">{o.shippingAddress}</span>
+                  주소: <span className="font-medium text-gray-900">{o.receiverAddress}</span>
                 </p>
               </div>
 
               <div className="flex gap-2">
-                {o.status === 'PAID' && (
+                {o.orderItemStatus === 'ORDERED' && (
                   <button
                     onClick={() => confirmMutation.mutate(o.orderItemId)}
                     className="btn-primary flex items-center gap-1 text-sm"
@@ -63,8 +73,14 @@ export default function SellerOrdersPage() {
                     주문 확인
                   </button>
                 )}
-                {o.status === 'CONFIRMED' && (
-                  <button className="btn-secondary flex items-center gap-1 text-sm">
+                {o.orderItemStatus === 'CONFIRMED' && (
+                  // 운송장 등록은 deliveryId가 필요하나 주문 목록 응답에 미포함 → 비활성화.
+                  <button
+                    type="button"
+                    disabled
+                    title="운송장 등록 기능은 준비 중입니다"
+                    className="btn-secondary flex items-center gap-1 text-sm opacity-50 cursor-not-allowed"
+                  >
                     <Truck size={16} />
                     배송 시작
                   </button>
