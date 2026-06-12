@@ -19,7 +19,8 @@ export function useSellerOrdersQuery(page = 0, size = 20) {
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: ProductCreateRequest) => sellerApi.createProduct(data),
+    mutationFn: ({ data, images }: { data: ProductCreateRequest; images: File[] }) =>
+      sellerApi.createProduct(data, images),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
       toast.success('상품이 등록되었습니다. 관리자 승인 후 노출됩니다.');
