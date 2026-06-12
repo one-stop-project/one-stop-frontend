@@ -5,13 +5,15 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice, formatDateTime } from '@/utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-700',
+  PENDING_PAYMENT: 'bg-gray-100 text-gray-700',
   PAID: 'bg-blue-100 text-blue-700',
-  CONFIRMED: 'bg-indigo-100 text-indigo-700',
-  SHIPPING: 'bg-orange-100 text-orange-700',
-  DELIVERED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-700',
-  REFUNDED: 'bg-gray-100 text-gray-700',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: '결제 대기',
+  PAID: '결제 완료',
+  CANCELLED: '취소',
 };
 
 export default function AdminOrdersPage() {
@@ -31,8 +33,9 @@ export default function AdminOrdersPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">주문번호</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">주문</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">구매자</th>
+                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">상품수</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">금액</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">주문일시</th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">상태</th>
@@ -41,13 +44,19 @@ export default function AdminOrdersPage() {
             <tbody className="divide-y divide-gray-100">
               {data?.content.map((o) => (
                 <tr key={o.orderId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium">{o.orderNumber}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{o.buyerName}</td>
+                  <td className="px-6 py-4 text-sm font-medium">주문 #{o.orderId}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <p className="font-medium text-gray-900">{o.userName}</p>
+                    <p className="text-xs text-gray-500">{o.userEmail}</p>
+                  </td>
+                  <td className="px-6 py-4 text-sm">{o.itemCount}종</td>
                   <td className="px-6 py-4 text-sm font-semibold">{formatPrice(o.finalPrice)}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDateTime(o.createdAt)}</td>
                   <td className="px-6 py-4">
-                    <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-700'}`}>
-                      {o.status}
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] || 'bg-gray-100 text-gray-700'}`}
+                    >
+                      {STATUS_LABELS[o.status] ?? o.status}
                     </span>
                   </td>
                 </tr>

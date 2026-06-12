@@ -17,10 +17,10 @@ export function useAdminProductsQuery(page = 0, size = 20) {
   });
 }
 
-export function useAdminSellersQuery(page = 0, size = 20) {
+export function useAdminSellersQuery() {
   return useQuery({
-    queryKey: ['admin', 'sellers', page, size],
-    queryFn: () => adminApi.getSellers(page, size),
+    queryKey: ['admin', 'sellers'],
+    queryFn: () => adminApi.getSellers(),
   });
 }
 
