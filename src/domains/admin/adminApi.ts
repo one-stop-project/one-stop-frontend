@@ -1,14 +1,16 @@
 import { apiClient, ApiResponse, PageResponse } from '@/api/client';
-import { ProductStatus, SellerStatus } from '@/types/common';
+import { ProductStatus, SellerStatus, OrderStatus, DeliveryStatus } from '@/types/common';
 
-export interface DashboardStats {
-  totalUsers: number;
-  totalSellers: number;
-  totalProducts: number;
-  pendingProducts: number;
-  pendingSellers: number;
-  todayOrders: number;
-  todayRevenue: number;
+// 백엔드 DashboardResponse 와 1:1 (중첩 구조)
+export interface DashboardResponse {
+  orders: {
+    statusCount: Partial<Record<OrderStatus, number>>;
+    todayOrderCount: number;
+    todayRevenue: number;
+  };
+  deliveries: {
+    statusCount: Partial<Record<DeliveryStatus, number>>;
+  };
 }
 
 export interface AdminProduct {
@@ -22,26 +24,25 @@ export interface AdminProduct {
 
 export interface AdminSeller {
   sellerId: number;
+  userId: number;
   shopName: string;
-  email: string;
-  businessNumber: string;
+  businessNumber: string; // 백엔드에서 마스킹되어 내려옴
   status: SellerStatus;
-  productCount: number;
-  createdAt: string;
 }
 
 export interface AdminOrder {
   orderId: number;
-  orderNumber: string;
-  buyerName: string;
+  userName: string;
+  userEmail: string;
   finalPrice: number;
-  status: string;
+  status: OrderStatus;
+  itemCount: number;
   createdAt: string;
 }
 
 export const adminApi = {
-  getDashboard: async (): Promise<DashboardStats> => {
-    const res = await apiClient.get<ApiResponse<DashboardStats>>('/admin/dashboard');
+  getDashboard: async (): Promise<DashboardResponse> => {
+    const res = await apiClient.get<ApiResponse<DashboardResponse>>('/admin/dashboard');
     return res.data.data;
   },
 
@@ -65,11 +66,9 @@ export const adminApi = {
     await apiClient.patch(`/admin/products/${productId}/force-inactive`, { reason });
   },
 
-  // 판매자 관리
-  getSellers: async (page = 0, size = 20): Promise<PageResponse<AdminSeller>> => {
-    const res = await apiClient.get<ApiResponse<PageResponse<AdminSeller>>>('/admin/sellers', {
-      params: { page, size },
-    });
+  // 판매자 관리 — 대기 중인 판매자 목록(배열 응답, 페이징 없음)
+  getSellers: async (): Promise<AdminSeller[]> => {
+    const res = await apiClient.get<ApiResponse<AdminSeller[]>>('/admin/sellers');
     return res.data.data;
   },
 
