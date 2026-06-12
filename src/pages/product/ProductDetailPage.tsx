@@ -46,7 +46,7 @@ export default function ProductDetailPage() {
       toast.error('옵션을 선택해주세요.');
       return;
     }
-    addToCart.mutate({ productItemId: selectedItemId, quantity });
+    addToCart.mutate({ itemId: selectedItemId, quantity });
   };
 
   return (
@@ -117,18 +117,18 @@ export default function ProductDetailPage() {
                 <button
                   key={item.itemId}
                   onClick={() => setSelectedItemId(item.itemId)}
-                  disabled={item.stock === 0}
+                  disabled={item.soldOut}
                   className={`w-full px-4 py-3 text-left rounded-lg border-2 transition-all ${
                     selectedItemId === item.itemId
                       ? 'border-primary-600 bg-primary-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  } ${item.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${item.soldOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{item.optionName}</p>
                       <p className="text-sm text-gray-500">
-                        {item.stock > 0 ? `재고 ${item.stock}개` : '품절'}
+                        {item.soldOut ? '품절' : '구매 가능'}
                       </p>
                     </div>
                     <p className="font-semibold">{formatPrice(item.price)}</p>
@@ -152,7 +152,7 @@ export default function ProductDetailPage() {
                   </button>
                   <span className="font-semibold w-8 text-center">{quantity}</span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(selectedItem.stock, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(99, q + 1))}
                     className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-white"
                   >
                     <Plus size={14} />

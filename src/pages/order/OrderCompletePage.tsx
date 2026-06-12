@@ -27,7 +27,7 @@ export default function OrderCompletePage() {
         <div className="bg-gray-50 rounded-lg p-4 text-sm text-left mb-6">
           <div className="flex justify-between py-1">
             <span className="text-gray-600">주문번호</span>
-            <span className="font-medium">{order.orderNumber}</span>
+            <span className="font-medium">#{order.orderId}</span>
           </div>
           <div className="flex justify-between py-1">
             <span className="text-gray-600">결제 금액</span>
@@ -35,7 +35,7 @@ export default function OrderCompletePage() {
           </div>
           <div className="flex justify-between py-1">
             <span className="text-gray-600">배송지</span>
-            <span className="font-medium text-right">{order.receiverAddress}</span>
+            <span className="font-medium text-right">{order.receiver.address}</span>
           </div>
         </div>
 

@@ -18,7 +18,7 @@ export interface ProductItem {
   itemId: number;
   optionName: string;    // 백엔드: optionName (name 아님!)
   price: number;
-  stock: number;
+  soldOut: boolean;      // 백엔드는 구매자에게 재고 수량을 숨기고 품절 여부만 내려줌
 }
 
 // 백엔드 ProductDetailResponse 와 1:1
@@ -38,7 +38,7 @@ export interface ProductDetail {
 
 // 백엔드 CategoryTreeResponse 와 1:1
 export interface Category {
-  categoryId: number;
+  id: number;            // 백엔드 CategoryTreeResponse 필드명은 id (categoryId 아님)
   name: string;
   children: Category[];
 }
@@ -65,10 +65,10 @@ export const productApi = {
     return res.data.data;
   },
 
-  // 인기 상품 — ★ Page 응답 (배열 아님!)
-  getPopular: async (size: number = 8): Promise<PageResponse<ProductSummary>> => {
-    const res = await apiClient.get<ApiResponse<PageResponse<ProductSummary>>>('/products/popular', {
-      params: { size },
+  // 인기 상품 — ★ 배열 응답(List), 파라미터는 limit (size 아님)
+  getPopular: async (limit: number = 10): Promise<ProductSummary[]> => {
+    const res = await apiClient.get<ApiResponse<ProductSummary[]>>('/products/popular', {
+      params: { limit },
     });
     return res.data.data;
   },

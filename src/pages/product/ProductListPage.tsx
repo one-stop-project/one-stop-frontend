@@ -81,11 +81,11 @@ export default function ProductListPage() {
                 </button>
               </li>
               {(categories ?? []).map((cat) => (
-                <li key={cat.categoryId}>
+                <li key={cat.id}>
                   <button
-                    onClick={() => updateParam('categoryId', String(cat.categoryId))}
+                    onClick={() => updateParam('categoryId', String(cat.id))}
                     className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                      categoryId === cat.categoryId
+                      categoryId === cat.id
                         ? 'bg-primary-50 text-primary-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
