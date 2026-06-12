@@ -1,12 +1,10 @@
-import { useState } from 'react';
 import { PackagePlus } from 'lucide-react';
-import { useSellerProductsQuery, useInboundMutation } from '@/hooks/queries/useSellerQuery';
+import { useSellerProductsQuery } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 
 export default function SellerInventoryPage() {
   const { data, isLoading } = useSellerProductsQuery(0, 50);
-  const inboundMutation = useInboundMutation();
 
   if (isLoading) return <PageSpinner />;
 
@@ -25,27 +23,24 @@ export default function SellerInventoryPage() {
                 <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0" />
                 <div>
                   <p className="font-medium text-sm">{p.name}</p>
-                  <p className="text-xs text-gray-500">{p.categoryName}</p>
+                  <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">현재 재고</p>
-                  <p className={`text-lg font-bold ${p.totalStock < 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                    {p.totalStock.toLocaleString()}
+                  <p className="text-xs text-gray-500">누적 판매량</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {p.salesCount.toLocaleString()}
                   </p>
                 </div>
+                {/* 입고는 옵션(ProductItem) 단위 itemId가 필요하나, 목록 응답이 itemId를
+                    노출하지 않아 비활성화. 백엔드가 옵션ID를 내려주면 옵션 선택 UI와 함께 연결 예정. */}
                 <button
-                  onClick={() => {
-                    const qty = prompt('입고 수량을 입력하세요');
-                    const n = Number(qty);
-                    if (n > 0) {
-                      // ProductItem 단위 입고 — 여기선 첫 아이템 가정 (실제론 옵션 선택 UI 필요)
-                      inboundMutation.mutate({ itemId: p.productId, quantity: n });
-                    }
-                  }}
-                  className="btn-secondary flex items-center gap-1 text-sm"
+                  type="button"
+                  disabled
+                  title="옵션별 입고 기능은 준비 중입니다"
+                  className="btn-secondary flex items-center gap-1 text-sm opacity-50 cursor-not-allowed"
                 >
                   <PackagePlus size={16} />
                   입고

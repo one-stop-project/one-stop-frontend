@@ -7,17 +7,19 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  ACTIVE: 'bg-green-100 text-green-700',
-  INACTIVE: 'bg-gray-100 text-gray-700',
+  APPROVE_REQUESTED: 'bg-yellow-100 text-yellow-700',
+  APPROVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-700',
+  DISCONTINUED: 'bg-gray-100 text-gray-700',
+  FORCE_INACTIVE: 'bg-orange-100 text-orange-700',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: '승인 대기',
-  ACTIVE: '판매 중',
-  INACTIVE: '판매 중지',
+  APPROVE_REQUESTED: '승인 요청',
+  APPROVED: '판매 중',
   REJECTED: '반려됨',
+  DISCONTINUED: '판매 중단',
+  FORCE_INACTIVE: '강제 비활성',
 };
 
 export default function SellerProductsPage() {
@@ -59,7 +61,7 @@ export default function SellerProductsPage() {
                   가격
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
-                  재고
+                  판매량
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
                   상태
@@ -77,12 +79,12 @@ export default function SellerProductsPage() {
                       <div className="w-12 h-12 bg-gray-100 rounded shrink-0" />
                       <div>
                         <p className="font-medium text-sm">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.categoryName}</p>
+                        <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm">{formatPrice(p.price)}</td>
-                  <td className="px-6 py-4 text-sm">{p.totalStock.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-sm">{formatPrice(p.minPrice)}</td>
+                  <td className="px-6 py-4 text-sm">{p.salesCount.toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[p.status]}`}

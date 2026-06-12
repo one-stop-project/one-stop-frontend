@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { adminApi } from '@/domains/admin/adminApi';
-import { ProductStatus } from '@/types/common';
 
 export function useDashboardQuery() {
   return useQuery({
@@ -11,10 +10,10 @@ export function useDashboardQuery() {
   });
 }
 
-export function useAdminProductsQuery(page = 0, size = 20, status?: ProductStatus) {
+export function useAdminProductsQuery(page = 0, size = 20) {
   return useQuery({
-    queryKey: ['admin', 'products', page, size, status],
-    queryFn: () => adminApi.getProducts(page, size, status),
+    queryKey: ['admin', 'products', page, size],
+    queryFn: () => adminApi.getProducts(page, size),
   });
 }
 
