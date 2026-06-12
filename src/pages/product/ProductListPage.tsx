@@ -23,8 +23,11 @@ export default function ProductListPage() {
   const [page, setPage] = useState(0);
 
   const keyword = searchParams.get('keyword') || undefined;
+  // 잘못된 categoryId(예: ?categoryId=abc)가 URL로 들어와도 NaN을 백엔드로 보내지 않게 가드
   const categoryIdStr = searchParams.get('categoryId');
-  const categoryId = categoryIdStr ? Number(categoryIdStr) : undefined;
+  const categoryIdNum = Number(categoryIdStr);
+  const categoryId =
+    categoryIdStr && Number.isFinite(categoryIdNum) ? categoryIdNum : undefined;
 
   // 잘못된 sort 값이 URL로 들어와도 안전하게 LATEST로 폴백
   const rawSort = searchParams.get('sort');
