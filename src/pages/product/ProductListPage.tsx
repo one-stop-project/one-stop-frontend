@@ -3,6 +3,7 @@ import {useSearchParams} from 'react-router-dom';
 import {useCategoriesQuery, useProductListQuery} from '@/hooks/queries/useProductQuery';
 import {ProductCard, ProductCardSkeleton} from '@/components/product/ProductCard';
 import {EmptyState} from '@/components/common/EmptyState';
+import {parseId} from '@/utils/parseId';
 
 // ★ 백엔드 SortType enum과 1:1 일치 (LATEST / PRICE_ASC / PRICE_DESC / POPULAR)
 //   기존 'salesCount,desc' / 'viewCount,desc' (Spring Pageable 형식)는
@@ -23,11 +24,8 @@ export default function ProductListPage() {
   const [page, setPage] = useState(0);
 
   const keyword = searchParams.get('keyword') || undefined;
-  // 잘못된 categoryId(예: ?categoryId=abc)가 URL로 들어와도 NaN을 백엔드로 보내지 않게 가드
-  const categoryIdStr = searchParams.get('categoryId');
-  const categoryIdNum = Number(categoryIdStr);
-  const categoryId =
-    categoryIdStr && Number.isFinite(categoryIdNum) ? categoryIdNum : undefined;
+  // 잘못된 categoryId(?categoryId=abc, 1.5 등)가 와도 양의 정수만 통과시켜 NaN/400 방지
+  const categoryId = parseId(searchParams.get('categoryId')) ?? undefined;
 
   // 잘못된 sort 값이 URL로 들어와도 안전하게 LATEST로 폴백
   const rawSort = searchParams.get('sort');

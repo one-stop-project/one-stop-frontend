@@ -4,6 +4,7 @@ import {useCancelOrderMutation, useOrderDetailQuery} from '@/hooks/queries/useOr
 import {useOrderDeliveriesQuery} from '@/hooks/queries/useDeliveryQuery';
 import {PageSpinner} from '@/components/common/Spinner';
 import {formatDateTime, formatPrice} from '@/utils/format';
+import {parseId} from '@/utils/parseId';
 import {DeliveryStatus, OrderStatus} from '@/types/common';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -23,7 +24,7 @@ const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const orderId = id ? Number(id) : null;
+  const orderId = parseId(id);
 
   const { data: order, isLoading } = useOrderDetailQuery(orderId);
   const { data: deliveries } = useOrderDeliveriesQuery(orderId);

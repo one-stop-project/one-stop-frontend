@@ -3,10 +3,11 @@ import {CheckCircle2} from 'lucide-react';
 import {useOrderDetailQuery} from '@/hooks/queries/useOrderQuery';
 import {PageSpinner} from '@/components/common/Spinner';
 import {formatPrice} from '@/utils/format';
+import {parseId} from '@/utils/parseId';
 
 export default function OrderCompletePage() {
   const { id } = useParams<{ id: string }>();
-  const orderId = id ? Number(id) : null;
+  const orderId = parseId(id);
 
   const { data: order, isLoading } = useOrderDetailQuery(orderId);
 
