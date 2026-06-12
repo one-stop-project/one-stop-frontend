@@ -84,6 +84,14 @@ export interface ItemUpdateResponse {
   status: ProductItemStatus;
 }
 
+// 백엔드 InboundResponse 와 1:1
+export interface InboundResponse {
+  itemId: number;
+  previousStock: number;
+  addedQuantity: number;
+  currentStock: number;
+}
+
 // 백엔드 ProductCreateResponse 와 1:1
 export interface ProductCreateResponse {
   productId: number;
@@ -172,9 +180,16 @@ export const sellerApi = {
     await apiClient.delete(`/seller/products/${productId}`);
   },
 
-  // 재고 입고
-  inbound: async (itemId: number, quantity: number): Promise<void> => {
-    await apiClient.post(`/seller/items/${itemId}/inbound`, { quantity });
+  // 재고 입고 (옵션 itemId 기준, reason 선택)
+  inbound: async (
+    itemId: number,
+    data: { quantity: number; reason?: string }
+  ): Promise<InboundResponse> => {
+    const res = await apiClient.post<ApiResponse<InboundResponse>>(
+      `/seller/items/${itemId}/inbound`,
+      data
+    );
+    return res.data.data;
   },
 
   updateItem: async (

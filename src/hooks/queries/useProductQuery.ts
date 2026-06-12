@@ -17,11 +17,11 @@ export function usePopularProductsQuery(size: number = 8) {
   });
 }
 
-export function useProductDetailQuery(productId: number | null) {
+export function useProductDetailQuery(productId: number | null, enabled = true) {
   return useQuery({
     queryKey: ['products', 'detail', productId],
     queryFn: () => productApi.getDetail(productId!),
-    enabled: productId !== null,
+    enabled: enabled && productId !== null,
     staleTime: 60 * 1000,
   });
 }
