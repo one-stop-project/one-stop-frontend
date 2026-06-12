@@ -7,11 +7,12 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { PageSpinner } from '@/components/common/Spinner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatPrice } from '@/utils/format';
+import { parseId } from '@/utils/parseId';
 import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const productId = id ? Number(id) : null;
+  const productId = parseId(id);
 
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);

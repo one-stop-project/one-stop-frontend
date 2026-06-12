@@ -5,6 +5,7 @@ import { useOrderDetailQuery } from '@/hooks/queries/useOrderQuery';
 import { useApprovePaymentMutation } from '@/hooks/queries/usePaymentQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { formatPrice } from '@/utils/format';
+import { parseId } from '@/utils/parseId';
 
 // 백엔드는 결제수단을 받지 않음(orderId+amount만). 아래는 화면 표시용 UI 선택지일 뿐 서버로 전송하지 않음
 type DisplayMethod = 'CARD' | 'BANK_TRANSFER' | 'KAKAO_PAY' | 'TOSS_PAY';
@@ -18,7 +19,7 @@ const PAYMENT_METHODS: { value: DisplayMethod; label: string; icon: any }[] = [
 
 export default function PaymentPage() {
   const { id } = useParams<{ id: string }>();
-  const orderId = id ? Number(id) : null;
+  const orderId = parseId(id);
 
   const { data: order, isLoading } = useOrderDetailQuery(orderId);
   const approveMutation = useApprovePaymentMutation();
