@@ -54,11 +54,20 @@ export function useDeleteProductMutation() {
 export function useInboundMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
-      sellerApi.inbound(itemId, quantity),
-    onSuccess: () => {
+    mutationFn: ({
+      itemId,
+      quantity,
+      reason,
+    }: {
+      itemId: number;
+      quantity: number;
+      reason?: string;
+    }) => sellerApi.inbound(itemId, { quantity, reason }),
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
-      toast.success('재고가 입고되었습니다.');
+      // 입고로 품절 여부가 바뀔 수 있어 상품 상세 캐시도 갱신
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success(`입고 완료 — 현재 재고 ${res.currentStock.toLocaleString()}개`);
     },
   });
 }
