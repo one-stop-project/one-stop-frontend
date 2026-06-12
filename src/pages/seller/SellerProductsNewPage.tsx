@@ -1,46 +1,85 @@
-import { useState, FormEvent } from 'react';
+import { useState, useMemo, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useCreateProductMutation } from '@/hooks/queries/useSellerQuery';
 import { useCategoriesQuery } from '@/hooks/queries/useProductQuery';
 
 interface ItemForm {
-  name: string;
+  optionValue: string;
   price: string;
   stock: string;
 }
+
+const MAX_CATEGORIES = 3;
+const MAX_IMAGES = 10;
+const MAX_ITEMS = 5;
 
 export default function SellerProductsNewPage() {
   const navigate = useNavigate();
   const { data: categories } = useCategoriesQuery();
   const createMutation = useCreateProductMutation();
 
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    categoryId: '',
-  });
-  const [items, setItems] = useState<ItemForm[]>([{ name: '', price: '', stock: '' }]);
+  const [form, setForm] = useState({ name: '', description: '' });
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [items, setItems] = useState<ItemForm[]>([{ optionValue: '', price: '', stock: '' }]);
 
-  const addItem = () => setItems([...items, { name: '', price: '', stock: '' }]);
+  // 미리보기 URL은 images 변경 시에만 생성하고, 교체/언마운트 시 해제(메모리 누수 방지)
+  const previews = useMemo(() => images.map((f) => URL.createObjectURL(f)), [images]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+
+  const toggleCategory = (id: number) =>
+    setCategoryIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((c) => c !== id)
+        : prev.length < MAX_CATEGORIES
+          ? [...prev, id]
+          : prev
+    );
+
+  const onImagesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    setImages((prev) => [...prev, ...files].slice(0, MAX_IMAGES));
+    e.target.value = ''; // 같은 파일 재선택 허용
+  };
+  const removeImage = (idx: number) => setImages(images.filter((_, i) => i !== idx));
+
+  const addItem = () => {
+    if (items.length >= MAX_ITEMS) return;
+    setItems([...items, { optionValue: '', price: '', stock: '' }]);
+  };
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
   const updateItem = (idx: number, field: keyof ItemForm, value: string) =>
     setItems(items.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (categoryIds.length < 1) {
+      toast.error('카테고리를 1개 이상 선택해주세요.');
+      return;
+    }
+    if (images.length < 1) {
+      toast.error('상품 이미지를 1장 이상 등록해주세요.');
+      return;
+    }
+    if (items.length > MAX_ITEMS) {
+      toast.error(`옵션은 최대 ${MAX_ITEMS}개까지 등록할 수 있습니다.`);
+      return;
+    }
     createMutation.mutate(
       {
-        name: form.name,
-        description: form.description,
-        price: Number(form.price),
-        categoryId: Number(form.categoryId),
-        items: items.map((i) => ({
-          name: i.name,
-          price: Number(i.price),
-          stock: Number(i.stock),
-        })),
+        data: {
+          name: form.name,
+          description: form.description,
+          categoryIds,
+          items: items.map((i) => ({
+            optionValue1: i.optionValue || undefined,
+            price: Number(i.price),
+            stock: Number(i.stock),
+          })),
+        },
+        images,
       },
       {
         onSuccess: () => navigate('/seller/products'),
@@ -65,6 +104,7 @@ export default function SellerProductsNewPage() {
               className="input-field"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              maxLength={200}
               required
             />
           </div>
@@ -72,34 +112,27 @@ export default function SellerProductsNewPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               카테고리 <span className="text-primary-600">*</span>
+              <span className="text-xs text-gray-400 ml-1">(1~3개 선택)</span>
             </label>
-            <select
-              className="input-field"
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-              required
-            >
-              <option value="">선택해주세요</option>
-              {categories?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              대표 가격 <span className="text-primary-600">*</span>
-            </label>
-            <input
-              type="number"
-              className="input-field"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              placeholder="0"
-              required
-            />
+            <div className="flex flex-wrap gap-2">
+              {categories?.map((c) => {
+                const selected = categoryIds.includes(c.id);
+                return (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => toggleCategory(c.id)}
+                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                      selected
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div>
@@ -116,6 +149,52 @@ export default function SellerProductsNewPage() {
           </div>
         </section>
 
+        {/* 상품 이미지 */}
+        <section className="card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">
+              상품 이미지 <span className="text-primary-600">*</span>
+            </h2>
+            <span className="text-xs text-gray-400">
+              {images.length}/{MAX_IMAGES} (첫 장이 대표 이미지)
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {images.map((_, idx) => (
+              <div key={idx} className="relative w-24 h-24">
+                <img
+                  src={previews[idx]}
+                  alt={`상품 이미지 ${idx + 1}`}
+                  className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute -top-2 -right-2 bg-gray-900 text-white rounded-full p-0.5"
+                  title="삭제"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+
+            {images.length < MAX_IMAGES && (
+              <label className="w-24 h-24 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 cursor-pointer hover:border-primary-400 hover:text-primary-500">
+                <ImagePlus size={20} />
+                <span className="text-xs">추가</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={onImagesChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </section>
+
         {/* 옵션 (상품 아이템) */}
         <section className="card p-6">
           <div className="flex items-center justify-between mb-4">
@@ -123,7 +202,8 @@ export default function SellerProductsNewPage() {
             <button
               type="button"
               onClick={addItem}
-              className="text-sm text-primary-600 flex items-center gap-1 hover:text-primary-700"
+              disabled={items.length >= MAX_ITEMS}
+              className="text-sm text-primary-600 flex items-center gap-1 hover:text-primary-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus size={16} />
               옵션 추가
@@ -134,13 +214,12 @@ export default function SellerProductsNewPage() {
             {items.map((item, idx) => (
               <div key={idx} className="flex gap-2 items-end">
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">옵션명</label>
+                  <label className="block text-xs text-gray-500 mb-1">옵션값</label>
                   <input
                     className="input-field"
-                    value={item.name}
-                    onChange={(e) => updateItem(idx, 'name', e.target.value)}
-                    placeholder="예: 빨강 / M"
-                    required
+                    value={item.optionValue}
+                    onChange={(e) => updateItem(idx, 'optionValue', e.target.value)}
+                    placeholder="예: 빨강 / M (선택)"
                   />
                 </div>
                 <div className="w-28">
@@ -150,6 +229,7 @@ export default function SellerProductsNewPage() {
                     className="input-field"
                     value={item.price}
                     onChange={(e) => updateItem(idx, 'price', e.target.value)}
+                    min={100}
                     required
                   />
                 </div>
@@ -160,6 +240,7 @@ export default function SellerProductsNewPage() {
                     className="input-field"
                     value={item.stock}
                     onChange={(e) => updateItem(idx, 'stock', e.target.value)}
+                    min={0}
                     required
                   />
                 </div>

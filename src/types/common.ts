@@ -14,6 +14,9 @@ export type ProductStatus =
   | 'DISCONTINUED' // 판매 중단
   | 'FORCE_INACTIVE'; // 강제 비활성
 
+// 상품 옵션(아이템) 상태 (BE ProductItemStatus)
+export type ProductItemStatus = 'ON_SALE' | 'STOP';
+
 // 주문 전체 상태 (BE OrderStatus)
 export type OrderStatus =
   | 'PENDING_PAYMENT' // 결제 대기
