@@ -123,11 +123,12 @@ export interface ProductDetailResponse {
 export interface SellerOrderItem {
   orderItemId: number;
   orderId: number;
+  deliveryId: number;
   itemName: string;
   quantity: number;
   price: number;
   subtotal: number;
-  buyerName: string;
+  buyerName: string; // 주문자(계정) 이름, 마스킹됨
   receiverAddress: string;
   orderItemStatus: OrderItemStatus;
   deliveryStatus: DeliveryStatus;
