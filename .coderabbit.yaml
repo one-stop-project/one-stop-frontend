@@ -1,0 +1,4 @@
+# 이 레포는 PR 자동 코드리뷰를 사용하지 않습니다.
+reviews:
+  auto_review:
+    enabled: false
