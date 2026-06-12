@@ -57,21 +57,27 @@ export interface CreateReviewRequest {
 }
 
 export interface UpdateReviewRequest {
-  rating: number;            // 1~5
-  content: string;           // 10~1000자
-  retainedImageUrls?: string[];  // 유지할 기존 이미지
-  newImageUrls?: string[];       // 새로 추가할 이미지
+  rating: number;            // 1~5, 필수
+  content: string;           // 10~1000자, 필수
+  imageUrls: string[];       // @NotNull, 최대 5장 — 수정 후 최종 이미지 목록 전체를 전송
 }
 
-// AI 리뷰 요약
+// AI 리뷰 요약 (BE AiReviewSummaryResponse / ReviewSummary 와 1:1)
+export type ReviewSentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'UNAVAILABLE';
+export type AiSummaryStatus = 'READY' | 'PENDING' | 'INSUFFICIENT';
+
+export interface ReviewSummary {
+  pros: string[];
+  cons: string[];
+  keywords: string[];
+  sentiment: ReviewSentiment;
+}
+
 export interface AiReviewSummary {
   reviewCount: number;
   averageRating: number;
-  summary: {
-    positive?: string;
-    negative?: string;
-    keywords?: string[];
-  } | null;
+  summary: ReviewSummary | null; // status가 PENDING/INSUFFICIENT면 null
+  status: AiSummaryStatus;
 }
 
 export interface MyReviewParams {
