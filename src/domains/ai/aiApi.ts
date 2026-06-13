@@ -9,6 +9,7 @@ import { apiClient, ApiResponse } from '@/api/client';
 
 export interface ShoppingAssistantRequest {
   message: string;           // @NotBlank, 최대 500자
+  categoryId?: number;       // @Positive, 선택 — 현재 페이지 카테고리 힌트
 }
 
 export interface ShoppingAssistantResponse {
@@ -16,11 +17,14 @@ export interface ShoppingAssistantResponse {
 }
 
 export const aiApi = {
-  // AI 쇼핑 어시스턴트에게 질문
-  ask: async (message: string): Promise<ShoppingAssistantResponse> => {
+  // AI 쇼핑 어시스턴트에게 질문 (categoryId: 현재 페이지 카테고리 힌트, 선택)
+  ask: async (
+    message: string,
+    categoryId?: number
+  ): Promise<ShoppingAssistantResponse> => {
     const res = await apiClient.post<ApiResponse<ShoppingAssistantResponse>>(
       '/ai/assistant',
-      { message }
+      { message, categoryId }
     );
     return res.data.data;
   },
