@@ -32,6 +32,7 @@ import PaymentPage from '@/pages/payment/PaymentPage';
 
 // User
 import MyPage from '@/pages/user/MyPage';
+import ReviewsPage from '@/pages/user/ReviewsPage';
 import PasswordChangePage from '@/pages/user/PasswordChangePage';
 import WithdrawPage from '@/pages/user/WithdrawPage';
 
@@ -88,6 +89,7 @@ export default function App() {
                                 <Route path="/coupons" element={<CouponsPage />} />
 
                                 <Route path="/mypage" element={<MyPage />} />
+                                <Route path="/mypage/reviews" element={<ReviewsPage />} />
                                 <Route path="/mypage/password" element={<PasswordChangePage />} />
                                 <Route path="/mypage/withdraw" element={<WithdrawPage />} />
                             </Route>
