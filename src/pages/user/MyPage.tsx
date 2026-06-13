@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, User as UserIcon, Lock, Trash2, Crown } from 'lucide-react';
+import { Package, User as UserIcon, Lock, Trash2, Crown, Star } from 'lucide-react';
 import { useMyInfoQuery, useUpdateMyInfoMutation } from '@/hooks/queries/useUserQuery';
 import {
   useMySubscriptionQuery,
@@ -56,6 +56,13 @@ export default function MyPage() {
             >
               <Package size={18} className="text-gray-500" />
               주문 내역
+            </Link>
+            <Link
+              to="/mypage/reviews"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              <Star size={18} className="text-gray-500" />
+              리뷰 관리
             </Link>
           </nav>
         </aside>
