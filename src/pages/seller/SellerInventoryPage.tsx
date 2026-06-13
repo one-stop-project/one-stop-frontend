@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { PackagePlus, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useSellerProductsQuery, useInboundMutation } from '@/hooks/queries/useSellerQuery';
+import {
+  useSellerProductsQuery,
+  useInboundMutation,
+  useUpdateItemMutation,
+} from '@/hooks/queries/useSellerQuery';
 import { useProductDetailQuery } from '@/hooks/queries/useProductQuery';
 import { PageSpinner, Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
-import { SellerProduct } from '@/domains/seller/sellerApi';
+import { SellerProduct, ItemUpdateRequest } from '@/domains/seller/sellerApi';
 import { ProductItem } from '@/domains/product/productApi';
 import { formatPrice } from '@/utils/format';
 
@@ -93,9 +97,13 @@ function InventoryRow({ product }: { product: SellerProduct }) {
 
 function InboundOptionRow({ item }: { item: ProductItem }) {
   const [qty, setQty] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [price, setPrice] = useState(String(item.price));
+  const [status, setStatus] = useState<'KEEP' | 'ON_SALE' | 'STOP'>('KEEP');
   const inboundMutation = useInboundMutation();
+  const updateMutation = useUpdateItemMutation();
 
-  const submit = () => {
+  const submitInbound = () => {
     const n = Number(qty);
     if (!Number.isInteger(n) || n < 1) {
       toast.error('입고 수량은 1 이상의 정수여야 합니다.');
@@ -107,31 +115,97 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
     );
   };
 
+  const submitEdit = () => {
+    const p = Number(price);
+    if (!Number.isInteger(p) || p < 100) {
+      toast.error('가격은 100원 이상의 정수여야 합니다.');
+      return;
+    }
+    // 전달된 필드만 수정됨 — 판매 상태는 '유지'면 보내지 않음
+    const data: ItemUpdateRequest = { price: p };
+    if (status !== 'KEEP') data.status = status;
+    updateMutation.mutate(
+      { itemId: item.itemId, data },
+      { onSuccess: () => setEditing(false) }
+    );
+  };
+
   return (
-    <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{item.optionName || '기본 옵션'}</p>
-        <p className="text-xs text-gray-500">
-          {formatPrice(item.price)}
-          {item.soldOut && <span className="ml-2 text-red-500">품절</span>}
-        </p>
+    <div className="bg-gray-50 rounded-lg px-3 py-2">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{item.optionName || '기본 옵션'}</p>
+          <p className="text-xs text-gray-500">
+            {formatPrice(item.price)}
+            {item.soldOut && <span className="ml-2 text-red-500">품절</span>}
+          </p>
+        </div>
+        <input
+          type="number"
+          min={1}
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          placeholder="수량"
+          className="input-field w-20"
+        />
+        <button
+          type="button"
+          onClick={submitInbound}
+          disabled={inboundMutation.isPending}
+          className="btn-primary text-sm whitespace-nowrap"
+        >
+          {inboundMutation.isPending ? '처리 중' : '입고'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing((e) => !e)}
+          className="btn-secondary text-sm whitespace-nowrap"
+        >
+          수정
+        </button>
       </div>
-      <input
-        type="number"
-        min={1}
-        value={qty}
-        onChange={(e) => setQty(e.target.value)}
-        placeholder="수량"
-        className="input-field w-24"
-      />
-      <button
-        type="button"
-        onClick={submit}
-        disabled={inboundMutation.isPending}
-        className="btn-primary text-sm whitespace-nowrap"
-      >
-        {inboundMutation.isPending ? '처리 중' : '입고'}
-      </button>
+
+      {editing && (
+        <div className="mt-2 pt-2 border-t border-gray-200 flex flex-wrap items-end gap-2">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">가격</label>
+            <input
+              type="number"
+              min={100}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="input-field w-28"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">판매 상태</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'KEEP' | 'ON_SALE' | 'STOP')}
+              className="input-field w-28"
+            >
+              <option value="KEEP">유지</option>
+              <option value="ON_SALE">판매중</option>
+              <option value="STOP">판매중지</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={submitEdit}
+            disabled={updateMutation.isPending}
+            className="btn-primary text-sm"
+          >
+            저장
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="btn-secondary text-sm"
+          >
+            취소
+          </button>
+        </div>
+      )}
     </div>
   );
 }
