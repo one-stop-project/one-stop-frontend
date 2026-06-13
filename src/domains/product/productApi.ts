@@ -36,6 +36,13 @@ export interface ProductDetail {
   categoryNames: string[];     // 백엔드: categoryNames
 }
 
+// 백엔드 PopularKeywordResponse 와 1:1
+export interface PopularKeyword {
+  rank: number;
+  keyword: string;
+  count: number;
+}
+
 // 백엔드 CategoryTreeResponse 와 1:1
 export interface Category {
   id: number;            // 백엔드 CategoryTreeResponse 필드명은 id (categoryId 아님)
@@ -90,6 +97,14 @@ export const productApi = {
   // 카테고리 트리
   getCategories: async (): Promise<Category[]> => {
     const res = await apiClient.get<ApiResponse<Category[]>>('/categories');
+    return res.data.data;
+  },
+
+  // 인기 검색어 — 배열 응답, 파라미터 limit(1~10)
+  getPopularKeywords: async (limit = 10): Promise<PopularKeyword[]> => {
+    const res = await apiClient.get<ApiResponse<PopularKeyword[]>>('/products/popular-keywords', {
+      params: { limit },
+    });
     return res.data.data;
   },
 };
