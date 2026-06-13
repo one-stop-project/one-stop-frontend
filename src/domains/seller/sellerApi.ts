@@ -54,11 +54,13 @@ export interface ProductCreateRequest {
   items: ProductItemCreateRequest[]; // 1~5개
 }
 
+// 백엔드 ProductUpdateRequest 와 1:1 (부분 수정 — 전달된 필드만)
 export interface ProductUpdateRequest {
   name?: string;
   description?: string;
-  price?: number;
-  categoryId?: number;
+  thumbnailUrl?: string;
+  categoryIds?: number[]; // 1~3개
+  tags?: string[]; // null이면 변경 없음, 빈 배열이면 전체 삭제
 }
 
 // 백엔드 ProductItemResponse 와 1:1 (판매자용 — stock 노출)
@@ -239,13 +241,17 @@ export const sellerApi = {
   //  상품 이미지 관리 (누락 보강)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  // 상품 이미지 추가 — multipart/form-data (images 파트 = 파일들)
   addProductImage: async (
     productId: number,
-    imageUrls: string[]
+    images: File[]
   ): Promise<ProductImageAddResponse> => {
+    const formData = new FormData();
+    images.forEach((image) => formData.append('images', image));
     const res = await apiClient.post<ApiResponse<ProductImageAddResponse>>(
       `/seller/products/${productId}/images`,
-      { imageUrls }
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
     );
     return res.data.data;
   },

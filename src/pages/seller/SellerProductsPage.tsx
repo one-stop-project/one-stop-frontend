@@ -93,16 +93,24 @@ export default function SellerProductsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => {
-                        if (confirm('정말 삭제하시겠습니까?')) {
-                          deleteMutation.mutate(p.productId);
-                        }
-                      }}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      삭제
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        to={`/seller/products/${p.productId}/edit`}
+                        className="text-sm text-primary-600 hover:underline"
+                      >
+                        수정
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (confirm('정말 삭제하시겠습니까?')) {
+                            deleteMutation.mutate(p.productId);
+                          }
+                        }}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

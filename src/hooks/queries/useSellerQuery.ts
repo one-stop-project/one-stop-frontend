@@ -41,7 +41,24 @@ export function useUpdateProductMutation() {
       sellerApi.updateProduct(productId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
       toast.success('상품이 수정되었습니다.');
+    },
+  });
+}
+
+export function useAddProductImageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, images }: { productId: number; images: File[] }) =>
+      sellerApi.addProductImage(productId, images),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      toast.success('이미지가 추가되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '이미지 추가에 실패했습니다.');
     },
   });
 }
