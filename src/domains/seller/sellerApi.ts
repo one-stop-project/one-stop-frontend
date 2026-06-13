@@ -227,14 +227,12 @@ export const sellerApi = {
     await apiClient.post(`/seller/deliveries/${deliveryId}/ship`, data);
   },
 
-  // 배송 상태 변경 (누락 보강)
-  updateDeliveryStatus: async (deliveryId: number, status: string): Promise<void> => {
+  // 배송 상태 변경 (DEPARTURE → DELIVERING → FINAL_DELIVERY)
+  updateDeliveryStatus: async (
+    deliveryId: number,
+    status: DeliveryStatus
+  ): Promise<void> => {
     await apiClient.patch(`/seller/deliveries/${deliveryId}/status`, { status });
-  },
-
-  // 주문 거절 (누락 보강)
-  rejectOrderItem: async (orderItemId: number, reason: string): Promise<void> => {
-    await apiClient.post(`/seller/orders/${orderItemId}/reject`, { reason });
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { sellerApi, ProductCreateRequest, ProductUpdateRequest } from '@/domains/seller/sellerApi';
+import { DeliveryStatus } from '@/types/common';
 
 export function useSellerProductsQuery(page = 0, size = 20) {
   return useQuery({
@@ -98,6 +99,30 @@ export function useShipDeliveryMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
       toast.success('배송이 시작되었습니다.');
+    },
+  });
+}
+
+export function useRejectOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderItemId, reason }: { orderItemId: number; reason: string }) =>
+      sellerApi.rejectOrder(orderItemId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
+      toast.success('주문을 거절했습니다.');
+    },
+  });
+}
+
+export function useUpdateDeliveryStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deliveryId, status }: { deliveryId: number; status: DeliveryStatus }) =>
+      sellerApi.updateDeliveryStatus(deliveryId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      toast.success('배송 상태가 변경되었습니다.');
     },
   });
 }
