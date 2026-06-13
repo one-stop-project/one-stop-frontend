@@ -1,10 +1,12 @@
+import {useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
-import {MapPin, Package, Phone, Truck} from 'lucide-react';
+import {MapPin, Package, Phone, Truck, ChevronDown, ChevronUp} from 'lucide-react';
 import {useCancelOrderMutation, useOrderDetailQuery} from '@/hooks/queries/useOrderQuery';
-import {useOrderDeliveriesQuery} from '@/hooks/queries/useDeliveryQuery';
-import {PageSpinner} from '@/components/common/Spinner';
+import {useOrderDeliveriesQuery, useDeliveryHistoryQuery} from '@/hooks/queries/useDeliveryQuery';
+import {PageSpinner, Spinner} from '@/components/common/Spinner';
 import {formatDateTime, formatPrice} from '@/utils/format';
 import {parseId} from '@/utils/parseId';
+import {Delivery} from '@/domains/delivery/deliveryApi';
 import {DeliveryStatus, OrderStatus} from '@/types/common';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -98,22 +100,7 @@ export default function OrderDetailPage() {
           </h2>
           <div className="space-y-3">
             {deliveries.map((d) => (
-              <div key={d.deliveryId} className="border border-gray-100 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">
-                    {DELIVERY_STATUS_LABELS[d.status]}
-                  </span>
-                  {d.invoiceNumber && (
-                    <span className="text-xs text-gray-500">
-                      {d.deliveryCompany} {d.invoiceNumber}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">{d.itemName}</p>
-                {d.updatedAt && (
-                  <p className="text-xs text-gray-400">업데이트: {formatDateTime(d.updatedAt)}</p>
-                )}
-              </div>
+              <DeliveryTrackItem key={d.deliveryId} delivery={d} />
             ))}
           </div>
         </section>
@@ -155,6 +142,67 @@ export default function OrderDetailPage() {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// 배송 1건의 현재 상태 + 펼치면 상태변경 이력 타임라인(펼칠 때만 조회)
+function DeliveryTrackItem({ delivery }: { delivery: Delivery }) {
+  const [open, setOpen] = useState(false);
+  const { data: history, isLoading } = useDeliveryHistoryQuery(
+    open ? delivery.deliveryId : null
+  );
+
+  return (
+    <div className="border border-gray-100 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium">{DELIVERY_STATUS_LABELS[delivery.status]}</span>
+        {delivery.invoiceNumber && (
+          <span className="text-xs text-gray-500">
+            {delivery.deliveryCompany} {delivery.invoiceNumber}
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-gray-500">{delivery.itemName}</p>
+
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="mt-2 text-xs text-primary-600 flex items-center gap-1"
+        aria-expanded={open}
+      >
+        배송 이력
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {open && (
+        <div className="mt-3 border-t border-gray-100 pt-3">
+          {isLoading ? (
+            <div className="flex justify-center py-2">
+              <Spinner size="sm" />
+            </div>
+          ) : history && history.history.length > 0 ? (
+            <ol className="space-y-3">
+              {history.history.map((h, i) => (
+                <li key={i} className="flex gap-3 text-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary-600 mt-1" />
+                    {i < history.history.length - 1 && (
+                      <div className="w-px flex-1 bg-gray-200" />
+                    )}
+                  </div>
+                  <div className="pb-1">
+                    <p className="font-medium text-gray-900">{h.statusDesc}</p>
+                    <p className="text-xs text-gray-400">{formatDateTime(h.changedAt)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-xs text-gray-400">배송 이력이 없습니다.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
