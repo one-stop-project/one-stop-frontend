@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, User as UserIcon, Lock, Trash2 } from 'lucide-react';
+import { Package, User as UserIcon, Lock, Trash2, Crown } from 'lucide-react';
 import { useMyInfoQuery, useUpdateMyInfoMutation } from '@/hooks/queries/useUserQuery';
+import {
+  useMySubscriptionQuery,
+  useSubscribeMutation,
+  useCancelSubscriptionMutation,
+} from '@/hooks/queries/useSubscriptionQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { formatPhone, formatDate } from '@/utils/format';
 
@@ -115,6 +120,8 @@ export default function MyPage() {
             )}
           </section>
 
+          <SubscriptionSection />
+
           {!me.isOAuth2User && (
             <section className="card p-6">
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-2">
@@ -145,6 +152,68 @@ export default function MyPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function SubscriptionSection() {
+  const { data: sub, isLoading } = useMySubscriptionQuery();
+  const subscribe = useSubscribeMutation();
+  const cancel = useCancelSubscriptionMutation();
+
+  const active = sub != null && sub.status === 'ACTIVE';
+
+  const handleCancel = () => {
+    const reason = prompt('구독 해지 사유를 입력하세요');
+    if (!reason || !reason.trim()) return;
+    cancel.mutate({ reason: reason.trim() });
+  };
+
+  return (
+    <section className="card p-6">
+      <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
+        <Crown size={20} className="text-primary-600" />
+        멤버십 구독
+      </h2>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-400">불러오는 중...</p>
+      ) : active ? (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">이용 중</span>
+            <span className="text-sm text-gray-600">{sub!.daysLeft}일 남음</span>
+          </div>
+          <dl className="space-y-2 text-sm mb-4">
+            <Row label="시작일" value={formatDate(sub!.startAt)} />
+            <Row label="종료일" value={formatDate(sub!.endAt)} />
+            <Row label="다음 결제일" value={formatDate(sub!.nextPaymentDate)} />
+          </dl>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={cancel.isPending}
+            className="text-sm text-red-600 hover:text-red-700 font-medium"
+          >
+            구독 해지 →
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-gray-600 mb-4">
+            멤버십에 가입하면 주문 시 할인 등 혜택을 받을 수 있어요.
+            {sub != null && sub.status !== 'ACTIVE' && ' (현재 미구독 상태)'}
+          </p>
+          <button
+            type="button"
+            onClick={() => subscribe.mutate()}
+            disabled={subscribe.isPending}
+            className="btn-primary"
+          >
+            {subscribe.isPending ? '처리 중...' : '멤버십 구독하기'}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
