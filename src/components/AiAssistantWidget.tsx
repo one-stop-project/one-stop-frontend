@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sparkles, Send, X } from 'lucide-react';
 import { useShoppingAssistantMutation } from '@/hooks/queries/useAiQuery';
+import { parseId } from '@/utils/parseId';
 
 // ════════════════════════════════════════════════════════════
 //  AI 쇼핑 어시스턴트 — 플로팅 채팅 위젯
@@ -22,6 +24,9 @@ export default function AiAssistantWidget() {
 
   const askMutation = useShoppingAssistantMutation();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  // 상품목록 등에서 ?categoryId=N 이 있으면 현재 카테고리 힌트로 전달(없으면 전체 검색)
+  const categoryId = parseId(searchParams.get('categoryId')) ?? undefined;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -35,7 +40,7 @@ export default function AiAssistantWidget() {
     setMessages((prev) => [...prev, { role: 'user', text: message }]);
     setInput('');
 
-    askMutation.mutate(message, {
+    askMutation.mutate({ message, categoryId }, {
       onSuccess: (res) => {
         setMessages((prev) => [...prev, { role: 'assistant', text: res.answer }]);
       },
