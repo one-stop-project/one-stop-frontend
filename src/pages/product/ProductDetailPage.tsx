@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp, Sparkles } from 'lucide-react';
 import { useProductDetailQuery, useRelatedProductsQuery } from '@/hooks/queries/useProductQuery';
+import { useAiReviewSummaryQuery } from '@/hooks/queries/useReviewQuery';
 import { useAddToCartMutation } from '@/hooks/queries/useCartQuery';
+import { ReviewSentiment } from '@/domains/review/reviewApi';
 import { ProductCard } from '@/components/product/ProductCard';
 import { PageSpinner } from '@/components/common/Spinner';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -196,6 +198,9 @@ export default function ProductDetailPage() {
         <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
       </section>
 
+      {/* AI 리뷰 요약 */}
+      {productId !== null && <AiReviewSummaryCard productId={productId} />}
+
       {/* 관련 상품 */}
       {related && related.length > 0 && (
         <section>
@@ -208,5 +213,74 @@ export default function ProductDetailPage() {
         </section>
       )}
     </div>
+  );
+}
+
+const SENTIMENT_BADGE: Record<ReviewSentiment, { label: string; cls: string }> = {
+  POSITIVE: { label: '긍정적', cls: 'bg-green-100 text-green-700' },
+  NEUTRAL: { label: '중립적', cls: 'bg-gray-100 text-gray-600' },
+  NEGATIVE: { label: '부정적', cls: 'bg-red-100 text-red-700' },
+  UNAVAILABLE: { label: '집계 불가', cls: 'bg-gray-100 text-gray-400' },
+};
+
+// AI 리뷰 요약 카드 — status가 READY이고 summary가 있을 때만 표시(PENDING/INSUFFICIENT는 숨김)
+function AiReviewSummaryCard({ productId }: { productId: number }) {
+  const { data } = useAiReviewSummaryQuery(productId);
+
+  if (!data || data.status !== 'READY' || !data.summary) return null;
+
+  const { summary, reviewCount, averageRating } = data;
+  const sentiment = SENTIMENT_BADGE[summary.sentiment] ?? SENTIMENT_BADGE.UNAVAILABLE;
+
+  return (
+    <section className="mb-12 card p-8">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="text-primary-600" size={20} />
+        <h2 className="text-xl font-bold text-gray-900">AI 리뷰 요약</h2>
+        <span className={`text-xs px-2 py-1 rounded-full ${sentiment.cls}`}>{sentiment.label}</span>
+      </div>
+      <p className="text-sm text-gray-500 mb-5">
+        리뷰 {reviewCount.toLocaleString()}개 · 평균 ★{averageRating.toFixed(1)}
+      </p>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-sm font-semibold text-green-700 mb-2">장점</h3>
+          {summary.pros.length > 0 ? (
+            <ul className="space-y-1 text-sm text-gray-700 list-disc list-inside">
+              {summary.pros.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-400">-</p>
+          )}
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-red-600 mb-2">단점</h3>
+          {summary.cons.length > 0 ? (
+            <ul className="space-y-1 text-sm text-gray-700 list-disc list-inside">
+              {summary.cons.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-400">-</p>
+          )}
+        </div>
+      </div>
+
+      {summary.keywords.length > 0 && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {summary.keywords.map((k, i) => (
+            <span key={i} className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+              #{k}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-5 text-xs text-gray-400">AI가 실제 구매자 리뷰를 요약한 내용입니다.</p>
+    </section>
   );
 }
