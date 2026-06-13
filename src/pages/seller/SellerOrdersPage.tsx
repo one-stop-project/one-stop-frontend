@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Check, Truck } from 'lucide-react';
+import { Check, Truck, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   useSellerOrdersQuery,
   useConfirmOrderMutation,
   useShipDeliveryMutation,
+  useRejectOrderMutation,
+  useUpdateDeliveryStatusMutation,
 } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -58,10 +60,18 @@ export default function SellerOrdersPage() {
 
 function SellerOrderCard({ order }: { order: SellerOrderItem }) {
   const confirmMutation = useConfirmOrderMutation();
+  const rejectMutation = useRejectOrderMutation();
   const shipMutation = useShipDeliveryMutation();
+  const statusMutation = useUpdateDeliveryStatusMutation();
   const [shipping, setShipping] = useState(false);
   const [company, setCompany] = useState('');
   const [invoice, setInvoice] = useState('');
+
+  const handleReject = () => {
+    const reason = prompt('주문 거절 사유를 입력하세요');
+    if (!reason || !reason.trim()) return;
+    rejectMutation.mutate({ orderItemId: order.orderItemId, reason: reason.trim() });
+  };
 
   const submitShip = () => {
     if (!company.trim() || !invoice.trim()) {
@@ -114,16 +124,27 @@ function SellerOrderCard({ order }: { order: SellerOrderItem }) {
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {order.orderItemStatus === 'ORDERED' && (
-          <button
-            onClick={() => confirmMutation.mutate(order.orderItemId)}
-            disabled={confirmMutation.isPending}
-            className="btn-primary flex items-center gap-1 text-sm"
-          >
-            <Check size={16} />
-            주문 확인
-          </button>
+          <>
+            <button
+              onClick={() => confirmMutation.mutate(order.orderItemId)}
+              disabled={confirmMutation.isPending}
+              className="btn-primary flex items-center gap-1 text-sm"
+            >
+              <Check size={16} />
+              주문 확인
+            </button>
+            <button
+              type="button"
+              onClick={handleReject}
+              disabled={rejectMutation.isPending}
+              className="btn-secondary flex items-center gap-1 text-sm text-red-600"
+            >
+              <X size={16} />
+              주문 거절
+            </button>
+          </>
         )}
         {order.deliveryStatus === 'INSTRUCT' && !shipping && (
           <button
@@ -133,6 +154,28 @@ function SellerOrderCard({ order }: { order: SellerOrderItem }) {
           >
             <Truck size={16} />
             배송 시작
+          </button>
+        )}
+        {order.deliveryStatus === 'DEPARTURE' && (
+          <button
+            type="button"
+            onClick={() => statusMutation.mutate({ deliveryId: order.deliveryId, status: 'DELIVERING' })}
+            disabled={statusMutation.isPending}
+            className="btn-secondary flex items-center gap-1 text-sm"
+          >
+            <Truck size={16} />
+            배송중으로 변경
+          </button>
+        )}
+        {order.deliveryStatus === 'DELIVERING' && (
+          <button
+            type="button"
+            onClick={() => statusMutation.mutate({ deliveryId: order.deliveryId, status: 'FINAL_DELIVERY' })}
+            disabled={statusMutation.isPending}
+            className="btn-secondary flex items-center gap-1 text-sm"
+          >
+            <Check size={16} />
+            배송완료로 변경
           </button>
         )}
       </div>
