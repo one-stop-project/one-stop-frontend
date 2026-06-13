@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { sellerApi, ProductCreateRequest, ProductUpdateRequest } from '@/domains/seller/sellerApi';
+import {
+  sellerApi,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  ItemUpdateRequest,
+} from '@/domains/seller/sellerApi';
 import { DeliveryStatus } from '@/types/common';
 
 export function useSellerProductsQuery(page = 0, size = 20) {
@@ -48,6 +53,20 @@ export function useDeleteProductMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
       toast.success('삭제되었습니다.');
+    },
+  });
+}
+
+export function useUpdateItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: ItemUpdateRequest }) =>
+      sellerApi.updateItem(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      // 가격·판매상태 변동이 상품 상세에 반영되도록 캐시 갱신
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('옵션이 수정되었습니다.');
     },
   });
 }
