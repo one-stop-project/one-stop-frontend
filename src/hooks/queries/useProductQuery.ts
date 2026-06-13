@@ -35,6 +35,14 @@ export function useRelatedProductsQuery(productId: number | null) {
   });
 }
 
+export function usePopularKeywordsQuery(limit = 10) {
+  return useQuery({
+    queryKey: ['products', 'popular-keywords', limit],
+    queryFn: () => productApi.getPopularKeywords(limit),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useCategoriesQuery() {
   return useQuery({
     queryKey: ['categories'],
