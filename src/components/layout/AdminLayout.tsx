@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Store, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Package, Store, ShoppingBag, FolderTree } from 'lucide-react';
 import { DashboardLayout } from './DashboardLayout';
 
 export function AdminLayout() {
@@ -10,6 +10,7 @@ export function AdminLayout() {
         { to: '/admin/products', label: '상품 관리', icon: Package },
         { to: '/admin/sellers', label: '판매자 관리', icon: Store },
         { to: '/admin/orders', label: '주문 조회', icon: ShoppingBag },
+        { to: '/admin/categories', label: '카테고리 관리', icon: FolderTree },
       ]}
     />
   );
