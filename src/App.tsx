@@ -39,6 +39,7 @@ import WithdrawPage from '@/pages/user/WithdrawPage';
 import SellerDashboard from '@/pages/seller/SellerDashboard';
 import SellerProductsPage from '@/pages/seller/SellerProductsPage';
 import SellerProductsNewPage from '@/pages/seller/SellerProductsNewPage';
+import SellerProductEditPage from '@/pages/seller/SellerProductEditPage';
 import SellerInventoryPage from '@/pages/seller/SellerInventoryPage';
 import SellerOrdersPage from '@/pages/seller/SellerOrdersPage';
 
@@ -98,6 +99,7 @@ export default function App() {
                                 <Route path="/seller" element={<SellerDashboard />} />
                                 <Route path="/seller/products" element={<SellerProductsPage />} />
                                 <Route path="/seller/products/new" element={<SellerProductsNewPage />} />
+                                <Route path="/seller/products/:id/edit" element={<SellerProductEditPage />} />
                                 <Route path="/seller/inventory" element={<SellerInventoryPage />} />
                                 <Route path="/seller/orders" element={<SellerOrdersPage />} />
                             </Route>

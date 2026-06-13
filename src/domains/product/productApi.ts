@@ -34,6 +34,7 @@ export interface ProductDetail {
   items: ProductItem[];
   imageUrls: string[];         // 백엔드: imageUrls (images 아님!)
   categoryNames: string[];     // 백엔드: categoryNames
+  tags: string[];
 }
 
 // 백엔드 PopularKeywordResponse 와 1:1
