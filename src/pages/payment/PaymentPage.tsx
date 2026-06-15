@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { CreditCard, Building2 } from 'lucide-react';
 import { useOrderDetailQuery } from '@/hooks/queries/useOrderQuery';
 import { useApprovePaymentMutation } from '@/hooks/queries/usePaymentQuery';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
 import { parseId } from '@/utils/parseId';
 
@@ -21,10 +22,24 @@ export default function PaymentPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = parseId(id);
 
-  const { data: order, isLoading } = useOrderDetailQuery(orderId);
+  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
   const approveMutation = useApprovePaymentMutation();
   const [selectedMethod, setSelectedMethod] = useState<DisplayMethod>('CARD');
 
+  if (orderId === null || isError) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16">
+        <EmptyState
+          title="주문을 찾을 수 없습니다"
+          action={
+            <Link to="/orders" className="btn-primary inline-block">
+              주문 내역으로
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (isLoading || !order) return <PageSpinner />;
 
   if (order.status !== 'PENDING_PAYMENT') {

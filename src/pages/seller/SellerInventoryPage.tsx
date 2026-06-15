@@ -99,7 +99,6 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
   const [qty, setQty] = useState('');
   const [editing, setEditing] = useState(false);
   const [price, setPrice] = useState(String(item.price));
-  const [status, setStatus] = useState<'KEEP' | 'ON_SALE' | 'STOP'>('KEEP');
   const inboundMutation = useInboundMutation();
   const updateMutation = useUpdateItemMutation();
 
@@ -121,9 +120,9 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
       toast.error('가격은 100원 이상의 정수여야 합니다.');
       return;
     }
-    // 전달된 필드만 수정됨 — 판매 상태는 '유지'면 보내지 않음
+    // 가격만 수정. (판매중지(STOP) 토글은 제외 — 이 화면이 구매자 상세를 써서 STOP 옵션이
+    //  목록에서 사라져 복구 불가해지는 함정. 판매자 전용 옵션조회 API 생기면 상태변경 복원)
     const data: ItemUpdateRequest = { price: p };
-    if (status !== 'KEEP') data.status = status;
     updateMutation.mutate(
       { itemId: item.itemId, data },
       { onSuccess: () => setEditing(false) }
@@ -176,18 +175,6 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
               onChange={(e) => setPrice(e.target.value)}
               className="input-field w-28"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">판매 상태</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as 'KEEP' | 'ON_SALE' | 'STOP')}
-              className="input-field w-28"
-            >
-              <option value="KEEP">유지</option>
-              <option value="ON_SALE">판매중</option>
-              <option value="STOP">판매중지</option>
-            </select>
           </div>
           <button
             type="button"

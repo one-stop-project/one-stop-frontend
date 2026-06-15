@@ -46,14 +46,12 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) return;
-    navigate('/checkout', {
-      state: {
-        items: selectedItems.map((i) => ({
-          productItemId: i.itemId,    // 주문 시 itemId를 productItemId로 전달
-          quantity: i.quantity,
-        })),
-      },
-    });
+    // 장바구니 주문 = orderType CART + cartItemIds(로그인 장바구니의 행 id). 주문 후 백엔드가 장바구니에서 비움.
+    const cartItemIds = selectedItems
+      .map((i) => i.cartItemId)
+      .filter((id): id is number => id != null);
+    if (cartItemIds.length === 0) return;
+    navigate('/checkout', { state: { cartItemIds } });
   };
 
   if (items.length === 0) {
@@ -158,10 +156,11 @@ export default function CartPage() {
                           onClick={() =>
                             updateMutation.mutate({
                               itemId: item.itemId,
-                              quantity: Math.min(item.stock, item.quantity + 1),
+                              // 백엔드 수량 상한 99(@Max) — 재고와 99 중 작은 값으로 제한
+                              quantity: Math.min(99, item.stock, item.quantity + 1),
                             })
                           }
-                          disabled={item.quantity >= item.stock}
+                          disabled={!item.available || item.quantity >= Math.min(99, item.stock)}
                           className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                         >
                           <Plus size={12} />
