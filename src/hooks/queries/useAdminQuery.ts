@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { adminApi } from '@/domains/admin/adminApi';
+import { OrderStatus } from '@/types/common';
+
+export interface AdminOrderFilters {
+  status?: OrderStatus;
+  keyword?: string;
+  from?: string;
+  to?: string;
+}
 
 export function useDashboardQuery() {
   return useQuery({
@@ -24,10 +32,10 @@ export function useAdminSellersQuery() {
   });
 }
 
-export function useAdminOrdersQuery(page = 0, size = 20) {
+export function useAdminOrdersQuery(page = 0, size = 20, filters: AdminOrderFilters = {}) {
   return useQuery({
-    queryKey: ['admin', 'orders', page, size],
-    queryFn: () => adminApi.getOrders(page, size),
+    queryKey: ['admin', 'orders', page, size, filters],
+    queryFn: () => adminApi.getOrders(page, size, filters),
   });
 }
 

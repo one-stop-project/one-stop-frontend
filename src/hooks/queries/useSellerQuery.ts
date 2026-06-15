@@ -6,7 +6,7 @@ import {
   ProductUpdateRequest,
   ItemUpdateRequest,
 } from '@/domains/seller/sellerApi';
-import { DeliveryStatus } from '@/types/common';
+import { DeliveryStatus, OrderItemStatus } from '@/types/common';
 
 export function useSellerProductsQuery(page = 0, size = 20) {
   return useQuery({
@@ -15,10 +15,10 @@ export function useSellerProductsQuery(page = 0, size = 20) {
   });
 }
 
-export function useSellerOrdersQuery(page = 0, size = 20) {
+export function useSellerOrdersQuery(page = 0, size = 20, status?: OrderItemStatus) {
   return useQuery({
-    queryKey: ['seller', 'orders', page, size],
-    queryFn: () => sellerApi.getMyOrders(page, size),
+    queryKey: ['seller', 'orders', page, size, status],
+    queryFn: () => sellerApi.getMyOrders(page, size, status),
   });
 }
 
