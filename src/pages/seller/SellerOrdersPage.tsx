@@ -11,9 +11,10 @@ import {
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SellerOrderItem } from '@/domains/seller/sellerApi';
+import { OrderItemStatus } from '@/types/common';
 import { formatPrice, formatDateTime } from '@/utils/format';
 
-const ORDER_ITEM_STATUS_LABELS: Record<string, string> = {
+const ORDER_ITEM_STATUS_LABELS: Record<OrderItemStatus, string> = {
   PENDING_PAYMENT: '결제 대기',
   ORDERED: '주문 접수',
   CONFIRMED: '확인 완료',
@@ -25,16 +26,36 @@ const ORDER_ITEM_STATUS_LABELS: Record<string, string> = {
 
 export default function SellerOrdersPage() {
   const [page, setPage] = useState(0);
-  const { data, isLoading } = useSellerOrdersQuery(page, 20);
-
-  if (isLoading) return <PageSpinner />;
+  const [status, setStatus] = useState<OrderItemStatus | ''>('');
+  const { data, isLoading } = useSellerOrdersQuery(page, 20, status || undefined);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">주문 관리</h1>
 
-      {data?.content.length === 0 ? (
-        <EmptyState title="들어온 주문이 없습니다" description="상품을 등록하고 판매를 시작해보세요!" />
+      {/* 상태 필터 */}
+      <div className="mb-6">
+        <select
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value as OrderItemStatus | '');
+            setPage(0);
+          }}
+          className="input-field w-48"
+        >
+          <option value="">전체 상태</option>
+          {Object.entries(ORDER_ITEM_STATUS_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {isLoading ? (
+        <PageSpinner />
+      ) : data?.content.length === 0 ? (
+        <EmptyState title="해당 조건의 주문이 없습니다" description="상품을 등록하고 판매를 시작해보세요!" />
       ) : (
         <div className="space-y-4">
           {data?.content.map((o) => (

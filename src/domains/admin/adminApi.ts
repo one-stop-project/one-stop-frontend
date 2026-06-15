@@ -85,9 +85,13 @@ export const adminApi = {
   },
 
   // 주문 관리
-  getOrders: async (page = 0, size = 20): Promise<PageResponse<AdminOrder>> => {
+  getOrders: async (
+    page = 0,
+    size = 20,
+    filters: { status?: OrderStatus; keyword?: string; from?: string; to?: string } = {}
+  ): Promise<PageResponse<AdminOrder>> => {
     const res = await apiClient.get<ApiResponse<PageResponse<AdminOrder>>>('/admin/orders', {
-      params: { page, size },
+      params: { page, size, ...filters },
     });
     return res.data.data;
   },

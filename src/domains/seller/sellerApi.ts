@@ -207,9 +207,13 @@ export const sellerApi = {
   },
 
   // 주문
-  getMyOrders: async (page = 0, size = 20): Promise<PageResponse<SellerOrderItem>> => {
+  getMyOrders: async (
+    page = 0,
+    size = 20,
+    status?: OrderItemStatus
+  ): Promise<PageResponse<SellerOrderItem>> => {
     const res = await apiClient.get<ApiResponse<PageResponse<SellerOrderItem>>>('/seller/orders', {
-      params: { page, size },
+      params: { page, size, status },
     });
     return res.data.data;
   },

@@ -1,16 +1,18 @@
-import { useState } from 'react';
-import { useAdminOrdersQuery } from '@/hooks/queries/useAdminQuery';
+import { useState, FormEvent } from 'react';
+import toast from 'react-hot-toast';
+import { useAdminOrdersQuery, AdminOrderFilters } from '@/hooks/queries/useAdminQuery';
+import { OrderStatus } from '@/types/common';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice, formatDateTime } from '@/utils/format';
 
-const STATUS_COLORS: Record<string, string> = {
+const STATUS_COLORS: Record<OrderStatus, string> = {
   PENDING_PAYMENT: 'bg-gray-100 text-gray-700',
   PAID: 'bg-blue-100 text-blue-700',
   CANCELLED: 'bg-red-100 text-red-700',
 };
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING_PAYMENT: '결제 대기',
   PAID: '결제 완료',
   CANCELLED: '취소',
@@ -18,16 +20,71 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function AdminOrdersPage() {
   const [page, setPage] = useState(0);
-  const { data, isLoading } = useAdminOrdersQuery(page, 20);
+  const [statusInput, setStatusInput] = useState<OrderStatus | ''>('');
+  const [keyword, setKeyword] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [filters, setFilters] = useState<AdminOrderFilters>({});
 
-  if (isLoading) return <PageSpinner />;
+  const { data, isLoading } = useAdminOrdersQuery(page, 20, filters);
+
+  const applyFilters = (e: FormEvent) => {
+    e.preventDefault();
+    if (from && to && from > to) {
+      toast.error('시작일이 종료일보다 늦을 수 없습니다.');
+      return;
+    }
+    setFilters({
+      status: statusInput || undefined,
+      keyword: keyword.trim() || undefined,
+      from: from || undefined,
+      to: to || undefined,
+    });
+    setPage(0);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">전체 주문 조회</h1>
 
-      {data?.content.length === 0 ? (
-        <EmptyState title="주문이 없습니다" />
+      {/* 필터 */}
+      <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-2 mb-6">
+        <select
+          value={statusInput}
+          onChange={(e) => setStatusInput(e.target.value as OrderStatus | '')}
+          className="input-field w-36"
+        >
+          <option value="">전체 상태</option>
+          {Object.entries(STATUS_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <label className="flex flex-col text-xs text-gray-500">
+          시작일
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input-field w-40" />
+        </label>
+        <label className="flex flex-col text-xs text-gray-500">
+          종료일
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input-field w-40" />
+        </label>
+        <input
+          type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="구매자 이름·이메일"
+          className="input-field flex-1 min-w-[160px]"
+        />
+        <button type="submit" className="btn-primary whitespace-nowrap">
+          조회
+        </button>
+      </form>
+
+      {isLoading ? (
+        <PageSpinner />
+      ) : data?.content.length === 0 ? (
+        <EmptyState title="해당 조건의 주문이 없습니다" />
       ) : (
         <div className="card overflow-hidden">
           <table className="w-full">
