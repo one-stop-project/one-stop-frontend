@@ -1,6 +1,6 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, X, ImagePlus } from 'lucide-react';
+import { X, ImagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useProductDetailQuery } from '@/hooks/queries/useProductQuery';
 import {
@@ -9,9 +9,9 @@ import {
 } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { TagInput } from '@/components/product/TagInput';
 import { parseId } from '@/utils/parseId';
 
-const MAX_TAGS = 10;
 const MAX_NEW_IMAGES = 10;
 
 export default function SellerProductEditPage() {
@@ -26,7 +26,6 @@ export default function SellerProductEditPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
   const [newImages, setNewImages] = useState<File[]>([]);
   const [initialized, setInitialized] = useState(false);
 
@@ -48,18 +47,6 @@ export default function SellerProductEditPage() {
     );
   }
   if (isLoading || !product) return <PageSpinner />;
-
-  const addTag = () => {
-    const t = tagInput.trim();
-    if (!t) return;
-    if (tags.length >= MAX_TAGS) {
-      toast.error(`태그는 최대 ${MAX_TAGS}개까지 가능합니다.`);
-      return;
-    }
-    if (!tags.includes(t)) setTags([...tags, t]);
-    setTagInput('');
-  };
-  const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
 
   const onPickImages = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
@@ -124,42 +111,9 @@ export default function SellerProductEditPage() {
         {/* 태그 */}
         <section className="card p-6 space-y-3">
           <h2 className="text-lg font-semibold">
-            태그 <span className="text-xs text-gray-400">(최대 {MAX_TAGS}개)</span>
+            태그 <span className="text-xs text-gray-400">(최대 10개)</span>
           </h2>
-          <div className="flex gap-2">
-            <input
-              className="input-field flex-1"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addTag();
-                }
-              }}
-              placeholder="태그 입력 후 Enter"
-              maxLength={30}
-            />
-            <button type="button" onClick={addTag} className="btn-secondary flex items-center gap-1">
-              <Plus size={16} />
-              추가
-            </button>
-          </div>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 rounded-full text-sm text-gray-700"
-                >
-                  #{t}
-                  <button type="button" onClick={() => removeTag(t)} className="text-gray-400 hover:text-gray-600">
-                    <X size={13} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+          <TagInput tags={tags} onChange={setTags} />
         </section>
 
         {/* 이미지 */}

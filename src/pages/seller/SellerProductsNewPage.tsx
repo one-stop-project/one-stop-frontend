@@ -4,6 +4,7 @@ import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCreateProductMutation } from '@/hooks/queries/useSellerQuery';
 import { useCategoriesQuery } from '@/hooks/queries/useProductQuery';
+import { TagInput } from '@/components/product/TagInput';
 
 interface ItemForm {
   optionValue: string;
@@ -23,6 +24,7 @@ export default function SellerProductsNewPage() {
   const [form, setForm] = useState({ name: '', description: '' });
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [images, setImages] = useState<File[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [items, setItems] = useState<ItemForm[]>([{ optionValue: '', price: '', stock: '' }]);
 
   // 미리보기 URL은 images 변경 시에만 생성하고, 교체/언마운트 시 해제(메모리 누수 방지)
@@ -73,6 +75,7 @@ export default function SellerProductsNewPage() {
           name: form.name,
           description: form.description,
           categoryIds,
+          tags: tags.length > 0 ? tags : undefined,
           items: items.map((i) => ({
             optionValue1: i.optionValue || undefined,
             price: Number(i.price),
@@ -147,6 +150,14 @@ export default function SellerProductsNewPage() {
               required
             />
           </div>
+        </section>
+
+        {/* 태그 */}
+        <section className="card p-6 space-y-3">
+          <h2 className="text-lg font-semibold">
+            태그 <span className="text-xs text-gray-400">(선택 · 최대 10개)</span>
+          </h2>
+          <TagInput tags={tags} onChange={setTags} />
         </section>
 
         {/* 상품 이미지 */}
