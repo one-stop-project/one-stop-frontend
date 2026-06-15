@@ -76,7 +76,16 @@ export default function SellerProductsPage() {
                 <tr key={p.productId} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded shrink-0" />
+                      {p.thumbnailUrl ? (
+                        <img
+                          src={p.thumbnailUrl}
+                          alt={p.name}
+                          onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                          className="w-12 h-12 rounded object-cover shrink-0 bg-gray-100"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded shrink-0" />
+                      )}
                       <div>
                         <p className="font-medium text-sm">{p.name}</p>
                         <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>

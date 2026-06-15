@@ -48,7 +48,16 @@ export default function SellerDashboard() {
           <div className="space-y-3">
             {products?.content.slice(0, 5).map((p) => (
               <div key={p.productId} className="flex items-center gap-3 text-sm">
-                <div className="w-10 h-10 bg-gray-100 rounded shrink-0" />
+                {p.thumbnailUrl ? (
+                  <img
+                    src={p.thumbnailUrl}
+                    alt={p.name}
+                    onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                    className="w-10 h-10 rounded object-cover shrink-0 bg-gray-100"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-100 rounded shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{p.name}</p>
                   <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>

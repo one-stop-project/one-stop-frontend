@@ -1,30 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { categoryApi } from '@/domains/category/categoryApi';
 import {
   adminCategoryApi,
   CategoryCreateRequest,
   CategoryUpdateRequest,
 } from '@/domains/admin/categoryApi';
 
-const CATEGORY_KEY = ['category'];
-
-// 카테고리 트리 조회 — 거의 안 바뀌므로 길게 캐싱
-export function useCategoryTreeQuery() {
-  return useQuery({
-    queryKey: [...CATEGORY_KEY, 'tree'],
-    queryFn: () => categoryApi.getTree(),
-    staleTime: 10 * 60 * 1000,   // 10분
-    gcTime: 30 * 60 * 1000,
-  });
-}
-
-// 카테고리 변경 후 트리/목록 캐시 갱신 (useCategoriesQuery=['categories'], 위 트리=['category'])
+// 카테고리 변경 후 목록 캐시 갱신 (목록은 useCategoriesQuery = ['categories'])
 function useInvalidateCategories() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
-    queryClient.invalidateQueries({ queryKey: CATEGORY_KEY });
   };
 }
 
