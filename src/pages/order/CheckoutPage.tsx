@@ -20,7 +20,11 @@ export default function CheckoutPage() {
   const { data: me } = useMyInfoQuery();
   const createOrder = useCreateOrderMutation();
 
-  const items = (location.state as { items?: CheckoutItem[] })?.items;
+  // DIRECT(바로구매)=items[{itemId,quantity}], CART(장바구니)=cartItemIds[]
+  const state = location.state as { items?: CheckoutItem[]; cartItemIds?: number[] } | null;
+  const items = state?.items;
+  const cartItemIds = state?.cartItemIds;
+  const isCart = Array.isArray(cartItemIds) && cartItemIds.length > 0;
 
   const [form, setForm] = useState({
     receiverName: '',
@@ -40,7 +44,7 @@ export default function CheckoutPage() {
     }
   }, [me]);
 
-  if (!items || items.length === 0) {
+  if (!isCart && (!items || items.length === 0)) {
     return <Navigate to="/cart" replace />;
   }
 
@@ -48,8 +52,9 @@ export default function CheckoutPage() {
     e.preventDefault();
     createOrder.mutate(
       {
-        orderType: 'DIRECT',
-        items,                                       // [{ itemId, quantity }]
+        orderType: isCart ? 'CART' : 'DIRECT',
+        items: isCart ? undefined : items,           // DIRECT: [{ itemId, quantity }]
+        cartItemIds: isCart ? cartItemIds : undefined, // CART: 장바구니 행 id
         receiverName: form.receiverName,
         receiverPhone: form.receiverPhone,
         receiverAddress: form.receiverAddress,       // ★

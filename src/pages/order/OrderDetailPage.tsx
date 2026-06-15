@@ -4,6 +4,7 @@ import {MapPin, Package, Phone, Truck, ChevronDown, ChevronUp} from 'lucide-reac
 import {useCancelOrderMutation, useOrderDetailQuery} from '@/hooks/queries/useOrderQuery';
 import {useOrderDeliveriesQuery, useDeliveryHistoryQuery} from '@/hooks/queries/useDeliveryQuery';
 import {PageSpinner, Spinner} from '@/components/common/Spinner';
+import {EmptyState} from '@/components/common/EmptyState';
 import {formatDateTime, formatPrice} from '@/utils/format';
 import {parseId} from '@/utils/parseId';
 import {Delivery} from '@/domains/delivery/deliveryApi';
@@ -28,10 +29,25 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = parseId(id);
 
-  const { data: order, isLoading } = useOrderDetailQuery(orderId);
+  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
   const { data: deliveries } = useOrderDeliveriesQuery(orderId);
   const cancelMutation = useCancelOrderMutation();
 
+  if (orderId === null || isError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState
+          title="주문을 찾을 수 없습니다"
+          description="잘못된 주소이거나 접근 권한이 없는 주문일 수 있어요."
+          action={
+            <Link to="/orders" className="btn-primary inline-block">
+              주문 내역으로
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (isLoading || !order) return <PageSpinner />;
 
   const canCancel = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';

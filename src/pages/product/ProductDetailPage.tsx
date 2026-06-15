@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp, Sparkles } from 'lucide-react';
 import { useProductDetailQuery, useRelatedProductsQuery } from '@/hooks/queries/useProductQuery';
 import { useAiReviewSummaryQuery } from '@/hooks/queries/useReviewQuery';
@@ -7,6 +7,7 @@ import { useAddToCartMutation } from '@/hooks/queries/useCartQuery';
 import { ReviewSentiment } from '@/domains/review/reviewApi';
 import { ProductCard } from '@/components/product/ProductCard';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useAuthStore } from '@/store/useAuthStore';
 import { formatPrice } from '@/utils/format';
 import { parseId } from '@/utils/parseId';
@@ -15,16 +16,32 @@ import toast from 'react-hot-toast';
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const productId = parseId(id);
+  const navigate = useNavigate();
 
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
 
-  const { data: product, isLoading } = useProductDetailQuery(productId);
+  const { data: product, isLoading, isError } = useProductDetailQuery(productId);
   const { data: related } = useRelatedProductsQuery(productId);
   const addToCart = useAddToCartMutation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
+  if (productId === null || isError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState
+          title="상품을 찾을 수 없습니다"
+          description="삭제되었거나 잘못된 주소일 수 있어요."
+          action={
+            <Link to="/products" className="btn-primary inline-block">
+              상품 목록으로
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (isLoading || !product) {
     return <PageSpinner />;
   }
@@ -50,6 +67,19 @@ export default function ProductDetailPage() {
       return;
     }
     addToCart.mutate({ itemId: selectedItemId, quantity });
+  };
+
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      toast.error('로그인이 필요합니다.');
+      return;
+    }
+    if (!selectedItemId) {
+      toast.error('옵션을 선택해주세요.');
+      return;
+    }
+    // 바로구매 = DIRECT 주문 흐름으로 결제 페이지 이동
+    navigate('/checkout', { state: { items: [{ itemId: selectedItemId, quantity }] } });
   };
 
   return (
@@ -183,6 +213,7 @@ export default function ProductDetailPage() {
               장바구니
             </button>
             <button
+              onClick={handleBuyNow}
               disabled={!selectedItemId}
               className="flex-1 py-4 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
             >
