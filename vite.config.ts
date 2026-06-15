@@ -9,12 +9,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // ★ 프로덕션 빌드 설정
+  // ★ 프로덕션 빌드 설정 — dist/ 산출물을 GitHub Actions(CD)가 독립 배포(EC2 /var/www/frontend)
   build: {
-    // frontend/dist 로 빌드한다.
-    // 이후 build.gradle 의 copyFrontendToStatic 태스크가
-    //   frontend/dist → src/main/resources/static 으로 복사한다.
-    // (Vite가 static 에 직접 쓰지 않고, Gradle 복사 파이프라인을 거치는 구조)
     outDir: 'dist',
     emptyOutDir: true,
   },
