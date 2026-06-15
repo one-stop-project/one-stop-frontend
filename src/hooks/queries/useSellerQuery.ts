@@ -8,6 +8,15 @@ import {
 } from '@/domains/seller/sellerApi';
 import { DeliveryStatus, OrderItemStatus } from '@/types/common';
 
+export function usePopularTagsQuery(keyword: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['seller', 'popular-tags', keyword],
+    queryFn: () => sellerApi.getPopularTags(keyword, 8),
+    enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useSellerProductsQuery(page = 0, size = 20) {
   return useQuery({
     queryKey: ['seller', 'products', page, size],

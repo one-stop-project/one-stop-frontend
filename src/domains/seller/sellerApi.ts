@@ -23,6 +23,12 @@ export interface ProductImageDeleteResponse {
 //  판매자 상품
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// 백엔드 PopularTagResponse 와 1:1 (태그 자동완성)
+export interface PopularTag {
+  tag: string;
+  usageCount: number;
+}
+
 export interface SellerProduct {
   productId: number;
   name: string;
@@ -143,6 +149,14 @@ export interface SellerOrderItem {
 
 export const sellerApi = {
   // 상품
+  // 인기 태그 자동완성 (keyword 앞부분(prefix) 일치, limit 1~10)
+  getPopularTags: async (keyword?: string, limit = 10): Promise<PopularTag[]> => {
+    const res = await apiClient.get<ApiResponse<PopularTag[]>>('/seller/products/tags/popular', {
+      params: { keyword: keyword || undefined, limit },
+    });
+    return res.data.data;
+  },
+
   getMyProducts: async (page = 0, size = 20): Promise<PageResponse<SellerProduct>> => {
     const res = await apiClient.get<ApiResponse<PageResponse<SellerProduct>>>('/seller/products', {
       params: { page, size },
