@@ -3,15 +3,20 @@ import { PackagePlus, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   useSellerProductsQuery,
+  useSellerProductDetailQuery,
   useInboundMutation,
   useUpdateItemMutation,
 } from '@/hooks/queries/useSellerQuery';
-import { useProductDetailQuery } from '@/hooks/queries/useProductQuery';
 import { PageSpinner, Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
-import { SellerProduct, ItemUpdateRequest } from '@/domains/seller/sellerApi';
-import { ProductItem } from '@/domains/product/productApi';
+import { SellerProduct, ProductItemResponse, ItemUpdateRequest } from '@/domains/seller/sellerApi';
+import { ProductItemStatus } from '@/types/common';
 import { formatPrice } from '@/utils/format';
+
+const ITEM_STATUS = {
+  ON_SALE: { label: '판매중', cls: 'bg-green-100 text-green-700' },
+  STOP: { label: '판매중지', cls: 'bg-gray-200 text-gray-600' },
+} as const;
 
 export default function SellerInventoryPage() {
   const { data, isLoading } = useSellerProductsQuery(0, 50);
@@ -22,7 +27,7 @@ export default function SellerInventoryPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">재고 관리</h1>
       <p className="text-sm text-gray-600 mb-6">
-        상품을 펼쳐 옵션별로 재고를 입고 처리할 수 있습니다.
+        상품을 펼쳐 옵션별 재고를 확인하고 입고·가격·판매상태를 관리할 수 있습니다.
       </p>
 
       {data?.content.length === 0 ? (
@@ -40,8 +45,8 @@ export default function SellerInventoryPage() {
 
 function InventoryRow({ product }: { product: SellerProduct }) {
   const [open, setOpen] = useState(false);
-  // 옵션(itemId)·품절여부는 상품 상세에서만 얻을 수 있어, 펼칠 때만 조회(불필요한 조회수 증가 방지)
-  const { data: detail, isLoading } = useProductDetailQuery(product.productId, open);
+  // 옵션(itemId)·재고·상태는 판매자 전용 상세에서 얻음. 펼칠 때만 조회.
+  const { data: detail, isLoading } = useSellerProductDetailQuery(product.productId, open);
 
   return (
     <div className="card p-5">
@@ -69,7 +74,7 @@ function InventoryRow({ product }: { product: SellerProduct }) {
           aria-expanded={open}
         >
           <PackagePlus size={16} />
-          재고 입고
+          재고 관리
           <ChevronDown size={16} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />
         </button>
       </div>
@@ -83,11 +88,11 @@ function InventoryRow({ product }: { product: SellerProduct }) {
           ) : detail && detail.items.length > 0 ? (
             <div className="space-y-2">
               {detail.items.map((item) => (
-                <InboundOptionRow key={item.itemId} item={item} />
+                <InventoryOptionRow key={item.itemId} item={item} />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 py-2">입고 가능한 옵션이 없습니다.</p>
+            <p className="text-sm text-gray-500 py-2">옵션이 없습니다.</p>
           )}
         </div>
       )}
@@ -95,12 +100,15 @@ function InventoryRow({ product }: { product: SellerProduct }) {
   );
 }
 
-function InboundOptionRow({ item }: { item: ProductItem }) {
+function InventoryOptionRow({ item }: { item: ProductItemResponse }) {
   const [qty, setQty] = useState('');
   const [editing, setEditing] = useState(false);
   const [price, setPrice] = useState(String(item.price));
+  const [status, setStatus] = useState<ProductItemStatus>(item.status);
   const inboundMutation = useInboundMutation();
   const updateMutation = useUpdateItemMutation();
+
+  const badge = ITEM_STATUS[item.status];
 
   const submitInbound = () => {
     const n = Number(qty);
@@ -120,9 +128,7 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
       toast.error('가격은 100원 이상의 정수여야 합니다.');
       return;
     }
-    // 가격만 수정. (판매중지(STOP) 토글은 제외 — 이 화면이 구매자 상세를 써서 STOP 옵션이
-    //  목록에서 사라져 복구 불가해지는 함정. 판매자 전용 옵션조회 API 생기면 상태변경 복원)
-    const data: ItemUpdateRequest = { price: p };
+    const data: ItemUpdateRequest = { price: p, status };
     updateMutation.mutate(
       { itemId: item.itemId, data },
       { onSuccess: () => setEditing(false) }
@@ -133,10 +139,12 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
     <div className="bg-gray-50 rounded-lg px-3 py-2">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{item.optionName || '기본 옵션'}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate">{item.optionName || '기본 옵션'}</p>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+          </div>
           <p className="text-xs text-gray-500">
-            {formatPrice(item.price)}
-            {item.soldOut && <span className="ml-2 text-red-500">품절</span>}
+            {formatPrice(item.price)} · 재고 {item.stock.toLocaleString()}개
           </p>
         </div>
         <input
@@ -176,6 +184,17 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
               className="input-field w-28"
             />
           </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">판매 상태</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as ProductItemStatus)}
+              className="input-field w-28"
+            >
+              <option value="ON_SALE">판매중</option>
+              <option value="STOP">판매중지</option>
+            </select>
+          </div>
           <button
             type="button"
             onClick={submitEdit}
@@ -186,7 +205,11 @@ function InboundOptionRow({ item }: { item: ProductItem }) {
           </button>
           <button
             type="button"
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setPrice(String(item.price));
+              setStatus(item.status);
+              setEditing(false);
+            }}
             className="btn-secondary text-sm"
           >
             취소

@@ -232,17 +232,21 @@ export default function ProductDetailPage() {
       {/* AI 리뷰 요약 */}
       {productId !== null && <AiReviewSummaryCard productId={productId} />}
 
-      {/* 관련 상품 */}
-      {related && related.length > 0 && (
-        <section>
-          <h2 className="text-xl font-bold text-gray-900 mb-6">함께 보면 좋은 상품</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {related.map((p) => (
-              <ProductCard key={p.productId} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* 관련 상품 — 판매중 옵션이 없어 minPrice 0으로 내려온 상품은 제외(0원 카드·상세 404 방어) */}
+      {(() => {
+        const relatedToShow = (related ?? []).filter((p) => p.minPrice > 0);
+        if (relatedToShow.length === 0) return null;
+        return (
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">함께 보면 좋은 상품</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {relatedToShow.map((p) => (
+                <ProductCard key={p.productId} product={p} />
+              ))}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }

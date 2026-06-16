@@ -17,6 +17,15 @@ export function usePopularTagsQuery(keyword: string, enabled: boolean) {
   });
 }
 
+export function useSellerProductDetailQuery(productId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ['seller', 'product-detail', productId],
+    queryFn: () => sellerApi.getMyProductDetail(productId!),
+    enabled: enabled && productId !== null,
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useSellerProductsQuery(page = 0, size = 20) {
   return useQuery({
     queryKey: ['seller', 'products', page, size],
@@ -49,7 +58,8 @@ export function useUpdateProductMutation() {
     mutationFn: ({ productId, data }: { productId: number; data: ProductUpdateRequest }) =>
       sellerApi.updateProduct(productId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      // ['seller'] 무효화로 목록(['seller','products'])·판매자 상세(['seller','product-detail']) 모두 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
       queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
       toast.success('상품이 수정되었습니다.');
     },
@@ -63,7 +73,8 @@ export function useAddProductImageMutation() {
       sellerApi.addProductImage(productId, images),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      // ['seller'] 무효화로 판매자 상세(['seller','product-detail'])의 이미지 목록도 즉시 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
       toast.success('이미지가 추가되었습니다.');
     },
     onError: (error: any) => {
