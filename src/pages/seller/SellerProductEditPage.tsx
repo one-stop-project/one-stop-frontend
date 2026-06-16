@@ -2,8 +2,8 @@ import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X, ImagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useProductDetailQuery } from '@/hooks/queries/useProductQuery';
 import {
+  useSellerProductDetailQuery,
   useUpdateProductMutation,
   useAddProductImageMutation,
 } from '@/hooks/queries/useSellerQuery';
@@ -19,7 +19,7 @@ export default function SellerProductEditPage() {
   const productId = parseId(id);
   const navigate = useNavigate();
 
-  const { data: product, isLoading, isError } = useProductDetailQuery(productId);
+  const { data: product, isLoading, isError } = useSellerProductDetailQuery(productId);
   const updateMutation = useUpdateProductMutation();
   const addImageMutation = useAddProductImageMutation();
 

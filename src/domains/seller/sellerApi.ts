@@ -69,12 +69,13 @@ export interface ProductUpdateRequest {
   tags?: string[]; // null이면 변경 없음, 빈 배열이면 전체 삭제
 }
 
-// 백엔드 ProductItemResponse 와 1:1 (판매자용 — stock 노출)
+// 백엔드 ProductItemResponse 와 1:1 (판매자용 — stock·옵션상태 노출)
 export interface ProductItemResponse {
   itemId: number;
   optionName: string;
   price: number;
   stock: number;
+  status: ProductItemStatus;
 }
 
 // 백엔드 ItemUpdateRequest 와 1:1 (전달된 필드만 수정, 모두 선택)
@@ -108,12 +109,14 @@ export interface ProductCreateResponse {
   items: ProductItemResponse[];
 }
 
-// 백엔드 ProductDetailResponse 와 1:1 (상품 수정 응답)
+// 백엔드 ProductDetailResponse 와 1:1 (판매자/관리자용 상세 — GET /seller/products/{id} + 수정 응답)
+// 구매자 상세와 달리 상품 상태·전체 옵션(STOP 포함)·옵션별 재고/상태를 노출, 조회수 미증가
 export interface ProductDetailResponse {
   productId: number;
   name: string;
   description: string;
   thumbnailUrl: string | null;
+  status: ProductStatus;
   viewCount: number;
   salesCount: number;
   shopName: string;
@@ -154,6 +157,14 @@ export const sellerApi = {
     const res = await apiClient.get<ApiResponse<PopularTag[]>>('/seller/products/tags/popular', {
       params: { keyword: keyword || undefined, limit },
     });
+    return res.data.data;
+  },
+
+  // 판매자 전용 상품 단건 상세 (전체 옵션·재고·상태 포함, 조회수 미증가, 소유 검증)
+  getMyProductDetail: async (productId: number): Promise<ProductDetailResponse> => {
+    const res = await apiClient.get<ApiResponse<ProductDetailResponse>>(
+      `/seller/products/${productId}`
+    );
     return res.data.data;
   },
 
