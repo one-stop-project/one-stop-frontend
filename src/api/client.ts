@@ -64,7 +64,8 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/refresh') &&
-      !originalRequest.url?.includes('/auth/login')
+      !originalRequest.url?.includes('/auth/login') &&
+      !originalRequest.url?.includes('/auth/oauth2/exchange')
     ) {
       if (isRefreshing) {
         // 이미 refresh 중이면 큐에 대기
