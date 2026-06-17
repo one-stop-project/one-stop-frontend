@@ -45,7 +45,7 @@ export default function MyPage() {
 
             <div className="space-y-1 text-left text-xs text-gray-500">
               <p>가입일: {formatDate(me.createdAt)}</p>
-              <p>최근 로그인: {formatDate(me.lastLoginAt)}</p>
+              {me.social && me.provider && <p>{me.provider} 계정 연동</p>}
             </div>
           </div>
 
@@ -129,7 +129,7 @@ export default function MyPage() {
 
           <SubscriptionSection />
 
-          {!me.isOAuth2User && (
+          {!me.social && (
             <section className="card p-6">
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-2">
                 <Lock size={20} className="text-primary-600" />
