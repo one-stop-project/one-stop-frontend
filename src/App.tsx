@@ -12,6 +12,7 @@ import {AuthInitializer} from '@/components/route/AuthInitializer';
 // 👈 추가된 부분 1: 컴포넌트 임포트
 import CouponsPage from '@/pages/coupon/CouponsPage';
 import AiAssistantWidget from '@/components/AiAssistantWidget';
+import NotificationSse from '@/components/NotificationSse';
 
 // Auth
 import LoginPage from '@/pages/auth/LoginPage';
@@ -129,6 +130,7 @@ export default function App() {
 
                     {/* 👈 추가된 부분 3: AI 어시스턴트 위젯 배치 */}
                     <AiAssistantWidget />
+                    <NotificationSse />
 
                 </AuthInitializer>
             </BrowserRouter>
