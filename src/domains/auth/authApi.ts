@@ -70,4 +70,12 @@ export const authApi = {
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout');
   },
+
+  // 소셜 로그인 성공 후 받은 일회용 code를 Access Token으로 교환 (refresh_token/device_id는 쿠키)
+  exchangeOAuth2: async (code: string): Promise<TokenRefreshResponse> => {
+    const res = await apiClient.post<ApiResponse<TokenRefreshResponse>>('/auth/oauth2/exchange', {
+      code,
+    });
+    return res.data.data;
+  },
 };

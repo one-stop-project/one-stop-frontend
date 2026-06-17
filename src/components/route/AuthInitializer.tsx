@@ -17,6 +17,11 @@ export function AuthInitializer({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const restoreSession = async () => {
+      // 소셜 로그인 콜백은 자체 exchange로 세션을 세우므로 여기서 refresh를 중복 실행하지 않음
+      if (window.location.pathname === '/oauth2/callback') {
+        setInitializing(false);
+        return;
+      }
       try {
         // RT 쿠키로 AT 재발급 시도
         const { accessToken, expiresIn } = await authApi.refresh();

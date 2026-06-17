@@ -16,6 +16,7 @@ import AiAssistantWidget from '@/components/AiAssistantWidget';
 // Auth
 import LoginPage from '@/pages/auth/LoginPage';
 import SignupPage from '@/pages/auth/SignupPage';
+import OAuth2CallbackPage from '@/pages/auth/OAuth2CallbackPage';
 
 // Product
 import HomePage from '@/pages/product/HomePage';
@@ -70,6 +71,7 @@ export default function App() {
                         {/* 인증 (레이아웃 없음) */}
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignupPage />} />
+                        <Route path="/oauth2/callback" element={<OAuth2CallbackPage />} />
 
                         {/* 메인 레이아웃 (구매자/공통) */}
                         <Route element={<MainLayout />}>
