@@ -44,11 +44,15 @@ export default function SellerOrdersPage() {
           className="input-field w-48"
         >
           <option value="">전체 상태</option>
-          {Object.entries(ORDER_ITEM_STATUS_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
+          {/* 결제 대기(PENDING_PAYMENT)는 결제 전 단계라 판매자 목록 대상이 아니며,
+              서버가 항상 빈 결과를 주므로 필터 선택지에서 제외한다. */}
+          {Object.entries(ORDER_ITEM_STATUS_LABELS)
+            .filter(([v]) => v !== 'PENDING_PAYMENT')
+            .map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
         </select>
       </div>
 
