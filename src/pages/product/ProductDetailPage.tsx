@@ -79,7 +79,7 @@ export default function ProductDetailPage() {
       return;
     }
     // 바로구매 = DIRECT 주문 흐름으로 결제 페이지 이동
-    navigate('/checkout', { state: { items: [{ itemId: selectedItemId, quantity }] } });
+    navigate('/checkout', { state: { items: [{ itemId: selectedItemId, quantity }], subtotal: finalPrice } });
   };
 
   return (

@@ -51,7 +51,7 @@ export default function CartPage() {
       .map((i) => i.cartItemId)
       .filter((id): id is number => id != null);
     if (cartItemIds.length === 0) return;
-    navigate('/checkout', { state: { cartItemIds } });
+    navigate('/checkout', { state: { cartItemIds, subtotal } });
   };
 
   if (items.length === 0) {
