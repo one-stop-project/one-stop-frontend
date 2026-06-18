@@ -20,11 +20,13 @@ export interface CartItem {
 
 // 백엔드 CartPageResponse 와 1:1
 export interface CartResponse {
-  cartId: number;
+  cartId: number | null;       // 빈 카트·게스트 카트면 null
   content: CartItem[];         // ★ items 아님!
   totalPrice: number;
+  itemCount: number;           // 전체 장바구니 수량 합계
   page: number;
   size: number;
+  totalElements: number;       // 전체 장바구니 상품 종류 수
   totalPages: number;
 }
 
@@ -57,7 +59,13 @@ export interface UpdateCartItemRequest {
 
 export const cartApi = {
   getCart: async (): Promise<CartResponse> => {
-    const res = await apiClient.get<ApiResponse<CartResponse>>('/carts');
+    // 백엔드는 기본 20개씩 페이지로 잘라 보낸다(@PageableDefault size=20).
+    // 장바구니는 '전체 선택 → 주문' 흐름이라 일부 페이지만 보이면 나머지 상품이
+    // 화면에서 사라지고 주문에서도 누락된다. 백엔드 장바구니 상한이 50종(MAX_CART_ITEM_COUNT)이므로
+    // size=50으로 전체를 한 번에 받아 누락을 막는다.
+    const res = await apiClient.get<ApiResponse<CartResponse>>('/carts', {
+      params: { size: 50 },
+    });
     return res.data.data;
   },
 
