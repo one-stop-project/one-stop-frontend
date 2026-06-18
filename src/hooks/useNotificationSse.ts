@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getAccessToken } from '@/api/client';
+import { getAccessToken, setAccessToken } from '@/api/client';
+import { authApi } from '@/domains/auth/authApi';
 import { NotificationSseResponse } from '@/domains/notification/notificationApi';
 
 async function parseSseStream(
@@ -54,7 +55,17 @@ export function useNotificationSse() {
             signal: currentAbort.signal,
           });
           if (!res.ok || !res.body) {
-            await new Promise((r) => setTimeout(r, 5000));
+            if (res.status === 401) {
+              // AT 만료 — Axios 인터셉터가 아닌 raw fetch이므로 직접 갱신
+              try {
+                const { accessToken } = await authApi.refresh();
+                setAccessToken(accessToken);
+              } catch {
+                stopped = true; // RT도 만료 → 루프 종료
+              }
+            } else {
+              await new Promise((r) => setTimeout(r, 5000));
+            }
             continue;
           }
           await parseSseStream(res.body, (n) => {
