@@ -11,10 +11,11 @@ import toast from 'react-hot-toast';
  * 4. credentials 포함 (HttpOnly RT 쿠키 전송)
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// 알림 SSE 등 axios를 거치지 않는 raw fetch에서도 같은 API 베이스를 쓰도록 내보낸다.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 15000,
   withCredentials: true, // ★ HttpOnly RT 쿠키 전송 필수
   headers: {
