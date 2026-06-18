@@ -176,6 +176,15 @@ function CouponCreateForm({ onDone }: { onDone: () => void }) {
     if (!form.startAt || !form.expiredAt) return alert('시작/종료 일시를 입력하세요.');
     if (new Date(form.expiredAt) <= new Date(form.startAt))
       return alert('종료 일시는 시작 일시보다 뒤여야 합니다.');
+    // 백엔드 검증과 동일: 정률은 할인율 1~100, 최대 할인액 1원 이상 필수
+    if (form.discountType === 'RATE') {
+      if (form.discountValue < 1 || form.discountValue > 100)
+        return alert('정률 할인율은 1~100 사이여야 합니다.');
+      if (!form.maxDiscountPrice || form.maxDiscountPrice <= 0)
+        return alert('정률 쿠폰은 최대 할인액을 1원 이상 입력해야 합니다.');
+    } else if (form.discountValue < 1) {
+      return alert('정액 할인액은 1원 이상이어야 합니다.');
+    }
 
     const payload: CreateCouponRequest = {
       ...form,
@@ -208,7 +217,7 @@ function CouponCreateForm({ onDone }: { onDone: () => void }) {
         </Field>
         {form.discountType === 'RATE' && (
           <Field label="최대 할인액(원)">
-            <input type="number" min={0} className="input-field" value={form.maxDiscountPrice ?? 0}
+            <input type="number" min={1} className="input-field" value={form.maxDiscountPrice ?? 0}
               onChange={(e) => set('maxDiscountPrice', Number(e.target.value))} />
           </Field>
         )}

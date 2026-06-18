@@ -53,11 +53,15 @@ export default function CheckoutPage() {
   const selectedCoupon = usableCoupons.find((c) => c.userCouponId === selectedCouponId) ?? null;
   const couponDiscount = (() => {
     if (!selectedCoupon || subtotal === 0) return 0;
-    const raw =
-      selectedCoupon.discountType === 'RATE'
-        ? Math.floor((subtotal * selectedCoupon.discountValue) / 100)
-        : selectedCoupon.discountValue;
-    return Math.min(raw, selectedCoupon.maxDiscountPrice);
+    // FIXED(정액): 고정 금액이지만 주문금액을 넘을 수 없음(백엔드와 동일하게 subtotal로 상한)
+    if (selectedCoupon.discountType === 'FIXED') {
+      return Math.min(selectedCoupon.discountValue, subtotal);
+    }
+    // RATE(정률): % 적용 후 maxDiscountPrice가 있으면 상한 적용
+    const raw = Math.floor((subtotal * selectedCoupon.discountValue) / 100);
+    return selectedCoupon.maxDiscountPrice != null
+      ? Math.min(raw, selectedCoupon.maxDiscountPrice)
+      : raw;
   })();
   const estimatedTotal = subtotal > 0 ? Math.max(0, subtotal - couponDiscount - usedPoint) : null;
 
@@ -186,7 +190,7 @@ export default function CheckoutPage() {
               {usableCoupons.map((c) => {
                 const preview =
                   c.discountType === 'RATE'
-                    ? `${c.discountValue}% 할인 (최대 ${formatPrice(c.maxDiscountPrice)})`
+                    ? `${c.discountValue}% 할인${c.maxDiscountPrice != null ? ` (최대 ${formatPrice(c.maxDiscountPrice)})` : ''}`
                     : `${formatPrice(c.discountValue)} 할인`;
                 return (
                   <option key={c.userCouponId} value={c.userCouponId}>
