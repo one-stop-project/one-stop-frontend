@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
+import {ChevronRight} from 'lucide-react';
 import {useCategoriesQuery, useProductListQuery} from '@/hooks/queries/useProductQuery';
 import {ProductCard, ProductCardSkeleton} from '@/components/product/ProductCard';
 import {EmptyState} from '@/components/common/EmptyState';
@@ -164,7 +165,7 @@ export default function ProductListPage() {
   );
 }
 
-// 카테고리 트리(대>중>소)를 깊이만큼 들여쓰며 재귀 렌더 — 모든 단계 클릭으로 필터 가능
+// 카테고리 트리(대>중>소)를 토글(드릴다운)로 렌더 — 상위를 누르면 하위가 펼쳐지고, 이름 클릭 시 필터 적용
 function CategoryFilterItem({
   cat,
   depth,
@@ -176,30 +177,61 @@ function CategoryFilterItem({
   activeId?: number;
   onSelect: (id: number) => void;
 }) {
+  const hasChildren = (cat.children?.length ?? 0) > 0;
+  // 현재 선택된 카테고리가 이 노드의 하위에 있으면 기본으로 펼쳐 둔다
+  const [open, setOpen] = useState(() => containsActive(cat, activeId));
+
   return (
     <>
       <li>
-        <button
-          onClick={() => onSelect(cat.id)}
-          style={{ paddingLeft: `${12 + depth * 14}px` }}
-          className={`w-full text-left pr-3 py-2 text-sm rounded-lg transition-colors ${
-            activeId === cat.id
-              ? 'bg-primary-50 text-primary-700 font-medium'
-              : 'text-gray-700 hover:bg-gray-100'
+        <div
+          style={{ paddingLeft: `${depth * 14}px` }}
+          className={`flex items-center rounded-lg transition-colors ${
+            activeId === cat.id ? 'bg-primary-50' : 'hover:bg-gray-100'
           }`}
         >
-          {cat.name}
-        </button>
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="p-2 text-gray-400 shrink-0"
+              aria-label={open ? '접기' : '펼치기'}
+            >
+              <ChevronRight
+                size={14}
+                className={`transition-transform ${open ? 'rotate-90' : ''}`}
+              />
+            </button>
+          ) : (
+            <span className="w-[30px] shrink-0" />
+          )}
+          <button
+            onClick={() => onSelect(cat.id)}
+            className={`flex-1 text-left pr-3 py-2 text-sm rounded-lg ${
+              activeId === cat.id ? 'text-primary-700 font-medium' : 'text-gray-700'
+            }`}
+          >
+            {cat.name}
+          </button>
+        </div>
       </li>
-      {cat.children?.map((child) => (
-        <CategoryFilterItem
-          key={child.id}
-          cat={child}
-          depth={depth + 1}
-          activeId={activeId}
-          onSelect={onSelect}
-        />
-      ))}
+      {open &&
+        cat.children?.map((child) => (
+          <CategoryFilterItem
+            key={child.id}
+            cat={child}
+            depth={depth + 1}
+            activeId={activeId}
+            onSelect={onSelect}
+          />
+        ))}
     </>
   );
+}
+
+// 선택된 카테고리가 이 노드 자신 또는 하위 트리에 포함되는지
+function containsActive(cat: Category, activeId?: number): boolean {
+  if (activeId == null) return false;
+  if (cat.id === activeId) return true;
+  return (cat.children ?? []).some((c) => containsActive(c, activeId));
 }
