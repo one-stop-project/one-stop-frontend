@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/useAuthStore';
-import { getAccessToken, setAccessToken } from '@/api/client';
+import { getAccessToken, setAccessToken, API_BASE_URL } from '@/api/client';
 import { authApi } from '@/domains/auth/authApi';
 import { NotificationSseResponse } from '@/domains/notification/notificationApi';
 
@@ -52,7 +52,7 @@ export function useNotificationSse() {
         currentAbort = new AbortController();
         try {
           const token = getAccessToken();
-          const res = await fetch('/api/notifications/subscribe', {
+          const res = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
             signal: currentAbort.signal,
           });
