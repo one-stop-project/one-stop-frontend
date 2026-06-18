@@ -147,6 +147,11 @@ export default function OrderDetailPage() {
         <Link to="/orders" className="btn-secondary flex-1 text-center">
           목록으로
         </Link>
+        {order.status === 'PENDING_PAYMENT' && (
+          <Link to={`/payment/${order.orderId}`} className="btn-primary flex-1 text-center">
+            결제하기
+          </Link>
+        )}
         {canCancel && (
           <button
             onClick={() => {
