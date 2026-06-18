@@ -154,6 +154,19 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
+          {product.tags && product.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {product.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-1 rounded-full bg-primary-50 text-primary-700"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           <hr className="my-6" />
 
           {/* 옵션 선택 */}
