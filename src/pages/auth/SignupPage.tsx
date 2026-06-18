@@ -21,11 +21,33 @@ export default function SignupPage() {
 
   const signupMutation = useSignupMutation();
 
+    // 백엔드 검증 규칙과 동일하게 맞춤 (SignUpRequest)
+    const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+    const PHONE_RE = /^010-\d{4}-\d{4}$/;
+
+    // 전화번호 입력 시 자동으로 하이픈 삽입 (010-1234-5678)
+    const formatPhone = (v: string) => {
+        const d = v.replace(/\D/g, '').slice(0, 11);
+        if (d.length < 4) return d;
+        if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
+        return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+    };
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
+        if (!PASSWORD_RE.test(form.password)) {
+            alert('비밀번호는 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해 8자 이상이어야 합니다.');
+            return;
+        }
+
         if (form.password !== form.passwordConfirm) {
             alert('비밀번호가 일치하지 않습니다.');
+            return;
+        }
+
+        if (!PHONE_RE.test(form.phone)) {
+            alert('전화번호 형식이 올바르지 않습니다. 예: 010-1234-5678');
             return;
         }
 
@@ -102,7 +124,7 @@ export default function SignupPage() {
                   className="input-field"
                   value={form.password}
                   onChange={(e) => update('password', e.target.value)}
-                  placeholder="8자 이상"
+                  placeholder="영문+숫자+특수문자 8자 이상"
                   required
                 />
               </FormField>
@@ -132,7 +154,7 @@ export default function SignupPage() {
                 type="tel"
                 className="input-field"
                 value={form.phone}
-                onChange={(e) => update('phone', e.target.value)}
+                onChange={(e) => update('phone', formatPhone(e.target.value))}
                 placeholder="010-1234-5678"
                 required
               />
