@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Truck, BarChart3 } from 'lucide-react';
+import { Package, ShoppingBag, Truck, CheckCircle2 } from 'lucide-react';
 import { useSellerProductsQuery, useSellerOrdersQuery } from '@/hooks/queries/useSellerQuery';
 
 export default function SellerDashboard() {
   const { data: products } = useSellerProductsQuery(0, 5);
   const { data: orders } = useSellerOrdersQuery(0, 5);
+  // 매출 집계 API가 없어 가짜 '-' 매출 카드 대신, 상태별 건수만 실제 값으로 표시한다.
+  // size=1로 목록은 받지 않고 totalElements(전체 건수)만 사용한다.
+  const { data: shipping } = useSellerOrdersQuery(0, 1, 'SHIPPING');
+  const { data: delivered } = useSellerOrdersQuery(0, 1, 'DELIVERED');
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -26,14 +30,14 @@ export default function SellerDashboard() {
         <StatCard
           icon={<Truck className="text-orange-600" />}
           label="배송 중"
-          value={0}
+          value={shipping?.totalElements ?? 0}
           link="/seller/orders"
         />
         <StatCard
-          icon={<BarChart3 className="text-purple-600" />}
-          label="이번 달 매출"
-          value="-"
-          link="#"
+          icon={<CheckCircle2 className="text-purple-600" />}
+          label="배송 완료"
+          value={delivered?.totalElements ?? 0}
+          link="/seller/orders"
         />
       </div>
 
