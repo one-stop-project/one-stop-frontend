@@ -9,6 +9,7 @@ import {
 } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner, Spinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Pagination } from '@/components/common/Pagination';
 import { SellerProduct, ProductItemResponse, ItemUpdateRequest } from '@/domains/seller/sellerApi';
 import { ProductItemStatus } from '@/types/common';
 import { formatPrice } from '@/utils/format';
@@ -19,7 +20,8 @@ const ITEM_STATUS = {
 } as const;
 
 export default function SellerInventoryPage() {
-  const { data, isLoading } = useSellerProductsQuery(0, 50);
+  const [page, setPage] = useState(0);
+  const { data, isLoading } = useSellerProductsQuery(page, 20);
 
   if (isLoading) return <PageSpinner />;
 
@@ -33,11 +35,18 @@ export default function SellerInventoryPage() {
       {data?.content.length === 0 ? (
         <EmptyState title="등록된 상품이 없습니다" />
       ) : (
-        <div className="space-y-3">
-          {data?.content.map((p) => (
-            <InventoryRow key={p.productId} product={p} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {data?.content.map((p) => (
+              <InventoryRow key={p.productId} product={p} />
+            ))}
+          </div>
+          <Pagination
+            page={page}
+            totalPages={data?.totalPages ?? 1}
+            onChange={setPage}
+          />
+        </>
       )}
     </div>
   );

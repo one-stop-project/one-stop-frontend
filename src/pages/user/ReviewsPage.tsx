@@ -12,11 +12,13 @@ import {
 import { Review, ReviewableOrderItem } from '@/domains/review/reviewApi';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Pagination } from '@/components/common/Pagination';
 import { formatDate } from '@/utils/format';
 
 export default function ReviewsPage() {
+  const [page, setPage] = useState(0);
   const { data: reviewable, isLoading: loadingReviewable } = useReviewableQuery();
-  const { data: myReviews, isLoading: loadingMine } = useMyReviewsQuery();
+  const { data: myReviews, isLoading: loadingMine } = useMyReviewsQuery({ page, size: 10 });
 
   if (loadingReviewable || loadingMine) return <PageSpinner />;
 
@@ -46,11 +48,18 @@ export default function ReviewsPage() {
         {mine.length === 0 ? (
           <EmptyState title="작성한 리뷰가 없습니다" />
         ) : (
-          <div className="space-y-3">
-            {mine.map((review) => (
-              <MyReviewItem key={review.reviewId} review={review} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3">
+              {mine.map((review) => (
+                <MyReviewItem key={review.reviewId} review={review} />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={myReviews?.totalPages ?? 1}
+              onChange={setPage}
+            />
+          </>
         )}
       </section>
     </div>
