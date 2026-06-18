@@ -12,6 +12,9 @@ interface CheckoutItem {
   quantity: number;
 }
 
+// 백엔드 기본 배송비(구독 무료배송은 결제 단계에서 확정). 예상 결제 금액에 반영한다.
+const DELIVERY_FEE = 3000;
+
 export default function CheckoutPage() {
   const location = useLocation();
   const { data: me } = useMyInfoQuery();
@@ -63,7 +66,9 @@ export default function CheckoutPage() {
       ? Math.min(raw, selectedCoupon.maxDiscountPrice)
       : raw;
   })();
-  const estimatedTotal = subtotal > 0 ? Math.max(0, subtotal - couponDiscount - usedPoint) : null;
+  // 백엔드 결제금액 = 상품금액 - 쿠폰 - 포인트 + 배송비. 미리보기도 배송비를 포함해야 실제 청구액과 맞는다.
+  const estimatedTotal =
+    subtotal > 0 ? Math.max(0, subtotal - couponDiscount - usedPoint) + DELIVERY_FEE : null;
 
   useEffect(() => {
     if (me) {
@@ -262,10 +267,17 @@ export default function CheckoutPage() {
                   <span>-{usedPoint.toLocaleString()}P</span>
                 </div>
               )}
+              <div className="flex justify-between text-gray-600">
+                <span>배송비</span>
+                <span>{formatPrice(DELIVERY_FEE)}</span>
+              </div>
               <div className="flex justify-between font-semibold text-gray-900 mt-1">
                 <span>예상 결제 금액</span>
                 <span>{formatPrice(estimatedTotal)}</span>
               </div>
+              <p className="text-xs text-gray-400 mt-1">
+                구독 회원은 배송비가 무료이며, 최종 금액은 결제 단계에서 확정됩니다.
+              </p>
             </div>
           )}
         </section>
