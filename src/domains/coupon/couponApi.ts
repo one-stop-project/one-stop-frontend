@@ -16,7 +16,8 @@ export interface AvailableCoupon {
   discountType: CouponDiscountType;
   discountValue: number;
   minOrderPrice: number;
-  maxDiscountPrice: number;
+  // 정액(FIXED) 쿠폰은 상한이 없어 백엔드가 null을 보냄. 정률(RATE)만 숫자 상한.
+  maxDiscountPrice: number | null;
   remainingQuantity: number;
   startAt: string;
   expiredAt: string;
@@ -38,7 +39,8 @@ export interface MyCoupon {
   discountType: CouponDiscountType;
   discountValue: number;
   minOrderPrice: number;
-  maxDiscountPrice: number;
+  // 정액(FIXED) 쿠폰은 상한이 없어 백엔드가 null을 보냄. 정률(RATE)만 숫자 상한.
+  maxDiscountPrice: number | null;
   status: UserCouponStatus;
   issuedAt: string;
   usedAt: string | null;

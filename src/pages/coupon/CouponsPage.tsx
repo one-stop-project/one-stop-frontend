@@ -95,7 +95,7 @@ function AvailableTab() {
             <p className="font-medium text-gray-900 mt-0.5">{coupon.name}</p>
             <p className="text-sm text-gray-500 mt-1">
               {coupon.minOrderPrice.toLocaleString()}원 이상 구매 시
-              {coupon.discountType === 'RATE' &&
+              {coupon.discountType === 'RATE' && coupon.maxDiscountPrice != null &&
                 ` · 최대 ${coupon.maxDiscountPrice.toLocaleString()}원`}
             </p>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
