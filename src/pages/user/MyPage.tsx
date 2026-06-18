@@ -9,10 +9,12 @@ import {
 } from '@/hooks/queries/useSubscriptionQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { formatPhone, formatDate } from '@/utils/format';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function MyPage() {
   const { data: me, isLoading } = useMyInfoQuery();
   const updateMutation = useUpdateMyInfoMutation();
+  const isBuyer = useAuthStore((s) => s.hasRole)('BUYER'); // 주문·리뷰·포인트·구독은 구매자 전용
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '' });
 
@@ -49,29 +51,31 @@ export default function MyPage() {
             </div>
           </div>
 
-          <nav className="card p-2 mt-4 space-y-1">
-            <Link
-              to="/orders"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
-            >
-              <Package size={18} className="text-gray-500" />
-              주문 내역
-            </Link>
-            <Link
-              to="/mypage/reviews"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
-            >
-              <Star size={18} className="text-gray-500" />
-              리뷰 관리
-            </Link>
-            <Link
-              to="/mypage/points"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
-            >
-              <Coins size={18} className="text-gray-500" />
-              포인트
-            </Link>
-          </nav>
+          {isBuyer && (
+            <nav className="card p-2 mt-4 space-y-1">
+              <Link
+                to="/orders"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Package size={18} className="text-gray-500" />
+                주문 내역
+              </Link>
+              <Link
+                to="/mypage/reviews"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Star size={18} className="text-gray-500" />
+                리뷰 관리
+              </Link>
+              <Link
+                to="/mypage/points"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Coins size={18} className="text-gray-500" />
+                포인트
+              </Link>
+            </nav>
+          )}
         </aside>
 
         {/* 메인 — 정보 수정 */}
@@ -134,7 +138,7 @@ export default function MyPage() {
             )}
           </section>
 
-          <SubscriptionSection />
+          {isBuyer && <SubscriptionSection />}
 
           {!me.social && (
             <section className="card p-6">
