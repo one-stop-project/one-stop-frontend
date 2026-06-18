@@ -4,6 +4,7 @@ import { useCreateOrderMutation } from '@/hooks/queries/useOrderQuery';
 import { useMyInfoQuery } from '@/hooks/queries/useUserQuery';
 import { useMyCouponsQuery } from '@/hooks/queries/useCouponQuery';
 import { usePointsQuery } from '@/hooks/queries/usePointQuery';
+import { useMySubscriptionQuery } from '@/hooks/queries/useSubscriptionQuery';
 import { MyCoupon } from '@/domains/coupon/couponApi';
 import { formatPrice } from '@/utils/format';
 
@@ -12,8 +13,10 @@ interface CheckoutItem {
   quantity: number;
 }
 
-// 백엔드 기본 배송비(구독 무료배송은 결제 단계에서 확정). 예상 결제 금액에 반영한다.
+// 백엔드 기본 배송비(구독 회원은 0). 예상 결제 금액에 반영한다.
 const DELIVERY_FEE = 3000;
+// 구독 회원 주문 할인율 — 백엔드 SubscriptionBenefitService.DISCOUNT_RATE(0.05)와 동일하게 맞춘다.
+const SUBSCRIPTION_DISCOUNT_RATE = 0.05;
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -33,6 +36,16 @@ export default function CheckoutPage() {
 
   const { data: pointData } = usePointsQuery(0, 1);
   const balance = pointData?.balance ?? 0;
+
+  // 구독 혜택(5% 할인·무료배송)은 ACTIVE이거나, 해지(CANCELLED)했어도 종료일 전이면 유효 — 백엔드 isValid와 동일.
+  const { data: sub } = useMySubscriptionQuery();
+  const subscribed =
+    !!sub &&
+    (sub.status === 'ACTIVE' ||
+      (sub.status === 'CANCELLED' && new Date(sub.endAt) > new Date()));
+  const subscriptionDiscount =
+    subscribed && subtotal > 0 ? Math.floor(subtotal * SUBSCRIPTION_DISCOUNT_RATE) : 0;
+  const deliveryFee = subscribed ? 0 : DELIVERY_FEE;
 
   // 보유 중인 AVAILABLE 쿠폰만 가져와 — minOrderPrice·만료일 추가 필터는 FE에서
   const { data: couponPage } = useMyCouponsQuery({ status: 'AVAILABLE', size: 100 });
@@ -66,9 +79,11 @@ export default function CheckoutPage() {
       ? Math.min(raw, selectedCoupon.maxDiscountPrice)
       : raw;
   })();
-  // 백엔드 결제금액 = 상품금액 - 쿠폰 - 포인트 + 배송비. 미리보기도 배송비를 포함해야 실제 청구액과 맞는다.
+  // 백엔드 결제금액 = 상품금액 - 쿠폰 - 포인트 - 구독할인 + 배송비. 미리보기도 동일하게 맞춘다.
   const estimatedTotal =
-    subtotal > 0 ? Math.max(0, subtotal - couponDiscount - usedPoint) + DELIVERY_FEE : null;
+    subtotal > 0
+      ? Math.max(0, subtotal - couponDiscount - subscriptionDiscount - usedPoint) + deliveryFee
+      : null;
 
   useEffect(() => {
     if (me) {
@@ -81,8 +96,9 @@ export default function CheckoutPage() {
     }
   }, [me]);
 
-  // 쿠폰 변경으로 pointMax가 줄어들면 usedPoint를 자동 조정
-  const pointMax = Math.min(balance, Math.max(0, subtotal - couponDiscount));
+  // 쿠폰/구독 할인으로 pointMax가 줄어들면 usedPoint를 자동 조정.
+  // 백엔드는 쿠폰+포인트+구독할인 합이 상품금액을 넘으면 주문을 거절(ORDER_012)하므로 구독할인도 차감한다.
+  const pointMax = Math.min(balance, Math.max(0, subtotal - couponDiscount - subscriptionDiscount));
   useEffect(() => {
     if (usedPoint > pointMax) setUsedPoint(pointMax);
   }, [pointMax]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -249,7 +265,8 @@ export default function CheckoutPage() {
           </div>
 
           {/* 할인 합계 미리보기 */}
-          {estimatedTotal !== null && (couponDiscount > 0 || usedPoint > 0) && (
+          {estimatedTotal !== null &&
+            (couponDiscount > 0 || usedPoint > 0 || subscriptionDiscount > 0) && (
             <div className="mt-4 pt-4 border-t border-gray-100 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>상품 금액</span>
@@ -261,6 +278,12 @@ export default function CheckoutPage() {
                   <span>-{formatPrice(couponDiscount)}</span>
                 </div>
               )}
+              {subscriptionDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>구독 할인 (5%)</span>
+                  <span>-{formatPrice(subscriptionDiscount)}</span>
+                </div>
+              )}
               {usedPoint > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>포인트 사용</span>
@@ -269,14 +292,16 @@ export default function CheckoutPage() {
               )}
               <div className="flex justify-between text-gray-600">
                 <span>배송비</span>
-                <span>{formatPrice(DELIVERY_FEE)}</span>
+                <span>{deliveryFee === 0 ? '무료' : formatPrice(deliveryFee)}</span>
               </div>
               <div className="flex justify-between font-semibold text-gray-900 mt-1">
                 <span>예상 결제 금액</span>
                 <span>{formatPrice(estimatedTotal)}</span>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                구독 회원은 배송비가 무료이며, 최종 금액은 결제 단계에서 확정됩니다.
+                {subscribed
+                  ? '구독 혜택(5% 할인·무료배송)이 반영된 예상 금액이며, 최종 금액은 결제 단계에서 확정됩니다.'
+                  : '최종 금액은 결제 단계에서 확정됩니다.'}
               </p>
             </div>
           )}
