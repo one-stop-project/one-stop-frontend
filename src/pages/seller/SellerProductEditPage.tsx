@@ -7,9 +7,11 @@ import {
   useUpdateProductMutation,
   useAddProductImageMutation,
 } from '@/hooks/queries/useSellerQuery';
+import { useCategoriesQuery } from '@/hooks/queries/useProductQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { TagInput } from '@/components/product/TagInput';
+import { CategoryPicker, MAX_CATEGORIES } from '@/components/product/CategoryPicker';
 import { parseId } from '@/utils/parseId';
 
 const MAX_NEW_IMAGES = 10;
@@ -20,12 +22,16 @@ export default function SellerProductEditPage() {
   const navigate = useNavigate();
 
   const { data: product, isLoading, isError } = useSellerProductDetailQuery(productId);
+  const { data: categories } = useCategoriesQuery();
   const updateMutation = useUpdateProductMutation();
   const addImageMutation = useAddProductImageMutation();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  // 카테고리 수정: 상세 응답은 카테고리 '이름'만 줘서 현재 id를 알 수 없다.
+  // 그래서 새로 선택할 때만 교체하고, 비워두면 기존 카테고리를 그대로 둔다.
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [initialized, setInitialized] = useState(false);
 
@@ -47,6 +53,15 @@ export default function SellerProductEditPage() {
     );
   }
   if (isLoading || !product) return <PageSpinner />;
+
+  const toggleCategory = (catId: number) =>
+    setCategoryIds((prev) =>
+      prev.includes(catId)
+        ? prev.filter((c) => c !== catId)
+        : prev.length < MAX_CATEGORIES
+          ? [...prev, catId]
+          : prev
+    );
 
   const onPickImages = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
@@ -75,7 +90,16 @@ export default function SellerProductEditPage() {
       return;
     }
     updateMutation.mutate(
-      { productId, data: { name: name.trim(), description: description.trim(), tags } },
+      {
+        productId,
+        data: {
+          name: name.trim(),
+          description: description.trim(),
+          tags,
+          // 새로 선택했을 때만 카테고리 교체(1~3개). 비워두면 보내지 않아 기존 유지.
+          categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+        },
+      },
       { onSuccess: () => navigate('/seller/products') }
     );
   };
@@ -108,6 +132,22 @@ export default function SellerProductEditPage() {
           </div>
         </section>
 
+        {/* 카테고리 */}
+        <section className="card p-6 space-y-3">
+          <h2 className="text-lg font-semibold">카테고리</h2>
+          <p className="text-xs text-gray-500">
+            현재 카테고리: {product.categoryNames.length > 0 ? product.categoryNames.join(', ') : '없음'}
+          </p>
+          <p className="text-xs text-gray-400">
+            새로 선택하면 카테고리가 교체됩니다(1~3개). 그대로 두려면 아무것도 선택하지 마세요.
+          </p>
+          <CategoryPicker
+            categories={categories}
+            selectedIds={categoryIds}
+            onToggle={toggleCategory}
+          />
+        </section>
+
         {/* 태그 */}
         <section className="card p-6 space-y-3">
           <h2 className="text-lg font-semibold">
@@ -120,7 +160,7 @@ export default function SellerProductEditPage() {
         <section className="card p-6 space-y-4">
           <h2 className="text-lg font-semibold">상품 이미지</h2>
 
-          {/* 기존 이미지 (보기 전용 — 삭제/대표변경은 백엔드 미지원) */}
+          {/* 기존 이미지 (보기 전용 — 상세 응답이 이미지 id를 안 줘서 개별 삭제/대표변경 불가) */}
           {product.imageUrls.length > 0 && (
             <div>
               <p className="text-xs text-gray-500 mb-2">현재 이미지</p>
