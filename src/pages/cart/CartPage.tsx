@@ -12,8 +12,9 @@ import { formatPrice } from '@/utils/format';
 import { useAuthStore } from '@/store/useAuthStore';
 import toast from 'react-hot-toast';
 
+// 백엔드 기본 배송비. 무료배송은 구독 혜택일 때만 적용되며(주문 생성 시 확정),
+// '5만원 이상 무료' 같은 금액 기준은 백엔드에 없다. 장바구니에선 기본 배송비만 추정 표시한다.
 const SHIPPING_FEE = 3000;
-const FREE_SHIPPING_THRESHOLD = 50000;
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -44,7 +45,8 @@ export default function CartPage() {
   const selectedItems = items.filter((i) => selectedIds.has(i.itemId));
   // subtotal은 price × quantity로 계산 (백엔드에 subtotal 필드 없음)
   const subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE;
+  // 선택 상품이 없으면 0, 있으면 기본 배송비(구독 무료배송은 결제 단계에서 확정)
+  const shippingFee = subtotal === 0 ? 0 : SHIPPING_FEE;
   const total = subtotal + shippingFee;
 
   const handleCheckout = () => {
@@ -213,9 +215,9 @@ export default function CartPage() {
                   {shippingFee === 0 ? '무료' : formatPrice(shippingFee)}
                 </span>
               </div>
-              {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
-                <p className="text-xs text-primary-600 bg-primary-50 px-3 py-2 rounded">
-                  💡 {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} 더 담으면 무료배송!
+              {subtotal > 0 && (
+                <p className="text-xs text-gray-500">
+                  구독 회원은 배송비가 무료이며, 최종 배송비는 결제 단계에서 확정됩니다.
                 </p>
               )}
             </div>

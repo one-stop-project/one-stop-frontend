@@ -13,7 +13,8 @@ export function Header() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const cartCount = cart?.content.length ?? 0;
+  // 전체 장바구니 상품 종류 수(현재 페이지 길이가 아닌 totalElements 기준)
+  const cartCount = cart?.totalElements ?? 0;
   const isBuyer = hasRole('BUYER'); // 장바구니·주문 등 구매자 전용 메뉴 노출 기준
 
   const handleSearch = (e: React.FormEvent) => {
