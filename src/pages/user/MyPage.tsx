@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, User as UserIcon, Lock, Trash2, Crown, Star, Coins } from 'lucide-react';
+import { Package, User as UserIcon, Lock, Trash2, Crown, Star, Coins, Ticket } from 'lucide-react';
 import { useMyInfoQuery, useUpdateMyInfoMutation } from '@/hooks/queries/useUserQuery';
 import {
   useMySubscriptionQuery,
@@ -73,6 +73,13 @@ export default function MyPage() {
               >
                 <Coins size={18} className="text-gray-500" />
                 포인트
+              </Link>
+              <Link
+                to="/coupons"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Ticket size={18} className="text-gray-500" />
+                쿠폰
               </Link>
             </nav>
           )}
