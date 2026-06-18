@@ -81,9 +81,11 @@ export default function App() {
                             <Route path="/products" element={<ProductListPage />} />
                             <Route path="/products/:id" element={<ProductDetailPage />} />
 
-                            {/* 인증만 필요 (역할 무관) — 장바구니·내정보·비밀번호·탈퇴 */}
+                            {/* 장바구니 — 비로그인 게스트도 이용(백엔드 guest_cart_id 쿠키) */}
+                            <Route path="/cart" element={<CartPage />} />
+
+                            {/* 인증만 필요 (역할 무관) — 내정보·비밀번호·탈퇴 */}
                             <Route element={<ProtectedRoute />}>
-                                <Route path="/cart" element={<CartPage />} />
                                 <Route path="/mypage" element={<MyPage />} />
                                 <Route path="/mypage/password" element={<PasswordChangePage />} />
                                 <Route path="/mypage/withdraw" element={<WithdrawPage />} />

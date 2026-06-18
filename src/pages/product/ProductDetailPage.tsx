@@ -59,11 +59,8 @@ export default function ProductDetailPage() {
         : [];
 
   const handleAddToCart = () => {
-    if (!isAuthenticated) {
-      toast.error('로그인이 필요합니다.');
-      return;
-    }
-    if (!hasRole('BUYER')) {
+    // 비로그인도 담기 가능(백엔드 guest_cart_id 쿠키, 로그인 시 병합). 단 로그인한 판매자/관리자는 불가.
+    if (isAuthenticated && !hasRole('BUYER')) {
       toast.error('구매자 계정만 이용할 수 있습니다.');
       return;
     }
