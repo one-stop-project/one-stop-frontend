@@ -48,7 +48,8 @@ export function useCreateReviewMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateReviewRequest) => reviewApi.create(data),
+    mutationFn: ({ data, images }: { data: CreateReviewRequest; images?: File[] }) =>
+      reviewApi.create(data, images),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...REVIEW_KEY, 'me'] });
       queryClient.invalidateQueries({ queryKey: [...REVIEW_KEY, 'reviewable'] });
@@ -65,8 +66,15 @@ export function useUpdateReviewMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ reviewId, data }: { reviewId: number; data: UpdateReviewRequest }) =>
-      reviewApi.update(reviewId, data),
+    mutationFn: ({
+      reviewId,
+      data,
+      newImages,
+    }: {
+      reviewId: number;
+      data: UpdateReviewRequest;
+      newImages?: File[];
+    }) => reviewApi.update(reviewId, data, newImages),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...REVIEW_KEY, 'me'] });
       toast.success('리뷰가 수정되었습니다.');

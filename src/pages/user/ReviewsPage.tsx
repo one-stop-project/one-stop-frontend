@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Pencil, Trash2 } from 'lucide-react';
+import { Star, Pencil, Trash2, ImagePlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   useReviewableQuery,
@@ -66,6 +66,58 @@ export default function ReviewsPage() {
   );
 }
 
+const MAX_REVIEW_IMAGES = 5; // 백엔드 리뷰 이미지 최대 장수
+
+// 새로 첨부할 이미지 파일 선택기 — 미리보기 + 삭제. max는 이 선택기에 담을 수 있는 최대 장수.
+function NewImageTiles({
+  files,
+  onChange,
+  max,
+}: {
+  files: File[];
+  onChange: (files: File[]) => void;
+  max: number;
+}) {
+  // 미리보기 URL은 files 변경 시에만 만들고 교체/언마운트 시 해제(메모리 누수 방지)
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+
+  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files ? Array.from(e.target.files) : [];
+    onChange([...files, ...picked].slice(0, max));
+    e.target.value = ''; // 같은 파일 재선택 허용
+  };
+  const remove = (idx: number) => onChange(files.filter((_, i) => i !== idx));
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {files.map((_, idx) => (
+        <div key={idx} className="relative w-16 h-16">
+          <img
+            src={previews[idx]}
+            alt={`첨부 이미지 ${idx + 1}`}
+            className="w-16 h-16 object-cover rounded border border-gray-200"
+          />
+          <button
+            type="button"
+            onClick={() => remove(idx)}
+            className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full p-0.5"
+            title="삭제"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ))}
+      {files.length < max && (
+        <label className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-gray-300 rounded text-gray-400 cursor-pointer hover:border-primary-400 hover:text-primary-500">
+          <ImagePlus size={16} />
+          <input type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
+        </label>
+      )}
+    </div>
+  );
+}
+
 // 별점 입력
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
@@ -98,19 +150,21 @@ function ReviewableItem({ item }: { item: ReviewableOrderItem }) {
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState('');
+  const [images, setImages] = useState<File[]>([]);
   const createMutation = useCreateReviewMutation();
+
+  const reset = () => {
+    setOpen(false);
+    setRating(0);
+    setContent('');
+    setImages([]);
+  };
 
   const submit = () => {
     if (!validateReview(rating, content)) return;
     createMutation.mutate(
-      { orderItemId: item.orderItemId, rating, content: content.trim() },
-      {
-        onSuccess: () => {
-          setOpen(false);
-          setRating(0);
-          setContent('');
-        },
-      }
+      { data: { orderItemId: item.orderItemId, rating, content: content.trim() }, images },
+      { onSuccess: reset }
     );
   };
 
@@ -143,8 +197,12 @@ function ReviewableItem({ item }: { item: ReviewableOrderItem }) {
             placeholder="상품은 어떠셨나요? (10~1000자)"
             maxLength={1000}
           />
+          <div>
+            <p className="text-xs text-gray-400 mb-1">사진 첨부 (선택 · 최대 {MAX_REVIEW_IMAGES}장)</p>
+            <NewImageTiles files={images} onChange={setImages} max={MAX_REVIEW_IMAGES} />
+          </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setOpen(false)} className="btn-secondary text-sm flex-1">
+            <button type="button" onClick={reset} className="btn-secondary text-sm flex-1">
               취소
             </button>
             <button
@@ -166,16 +224,28 @@ function MyReviewItem({ review }: { review: Review }) {
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(review.rating);
   const [content, setContent] = useState(review.content);
+  // retained: 유지할 기존 이미지 URL, newImages: 새로 추가할 파일 (둘 합쳐 최대 5장)
+  const [retained, setRetained] = useState<string[]>(review.images ?? []);
+  const [newImages, setNewImages] = useState<File[]>([]);
   const updateMutation = useUpdateReviewMutation();
   const deleteMutation = useDeleteReviewMutation();
+
+  const startEdit = () => {
+    setRating(review.rating);
+    setContent(review.content);
+    setRetained(review.images ?? []);
+    setNewImages([]);
+    setEditing(true);
+  };
 
   const submit = () => {
     if (!validateReview(rating, content)) return;
     updateMutation.mutate(
       {
         reviewId: review.reviewId,
-        // retainedImageUrls는 @NotNull — 이미지 편집 UI는 없으므로 기존 이미지 전부 유지
-        data: { rating, content: content.trim(), retainedImageUrls: review.images ?? [] },
+        // retainedImageUrls는 @NotNull — 남길 기존 이미지 목록(삭제한 것은 제외되어 서버에서 지워짐)
+        data: { rating, content: content.trim(), retainedImageUrls: retained },
+        newImages,
       },
       { onSuccess: () => setEditing(false) }
     );
@@ -198,6 +268,37 @@ function MyReviewItem({ review }: { review: Review }) {
             onChange={(e) => setContent(e.target.value)}
             maxLength={1000}
           />
+          <div>
+            <p className="text-xs text-gray-400 mb-1">
+              사진 (최대 {MAX_REVIEW_IMAGES}장 · 합계 {retained.length + newImages.length}장)
+            </p>
+            {retained.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {retained.map((url, idx) => (
+                  <div key={url} className="relative w-16 h-16">
+                    <img
+                      src={url}
+                      alt={`기존 이미지 ${idx + 1}`}
+                      className="w-16 h-16 object-cover rounded border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRetained(retained.filter((u) => u !== url))}
+                      className="absolute -top-1.5 -right-1.5 bg-gray-900 text-white rounded-full p-0.5"
+                      title="삭제"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <NewImageTiles
+              files={newImages}
+              onChange={setNewImages}
+              max={MAX_REVIEW_IMAGES - retained.length}
+            />
+          </div>
           <div className="flex gap-2">
             <button type="button" onClick={() => setEditing(false)} className="btn-secondary text-sm flex-1">
               취소
@@ -230,7 +331,7 @@ function MyReviewItem({ review }: { review: Review }) {
               </Link>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setEditing(true)} className="text-gray-400 hover:text-gray-600" title="수정">
+              <button type="button" onClick={startEdit} className="text-gray-400 hover:text-gray-600" title="수정">
                 <Pencil size={15} />
               </button>
               <button
@@ -245,6 +346,18 @@ function MyReviewItem({ review }: { review: Review }) {
             </div>
           </div>
           <p className="text-sm text-gray-700 whitespace-pre-wrap">{review.content}</p>
+          {review.images?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {review.images.map((url, idx) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt={`리뷰 이미지 ${idx + 1}`}
+                  className="w-16 h-16 object-cover rounded border border-gray-200"
+                />
+              ))}
+            </div>
+          )}
           <p className="text-xs text-gray-400 mt-1">{formatDate(review.createdAt)}</p>
         </>
       )}
