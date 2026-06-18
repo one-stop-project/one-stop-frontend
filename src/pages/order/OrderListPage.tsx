@@ -45,6 +45,7 @@ export default function OrderListPage() {
         {data.content.map((order) => {
           const statusInfo = STATUS_LABELS[order.status];
           const canCancel = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';
+          const canPay = order.status === 'PENDING_PAYMENT';
 
           return (
             <div key={order.orderId} className="card p-6">
@@ -95,6 +96,14 @@ export default function OrderListPage() {
                   >
                     상세 보기
                   </Link>
+                  {canPay && (
+                    <Link
+                      to={`/payment/${order.orderId}`}
+                      className="btn-primary text-sm"
+                    >
+                      결제하기
+                    </Link>
+                  )}
                   {canCancel && (
                     <button
                       onClick={() => {
