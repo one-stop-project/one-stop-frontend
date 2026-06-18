@@ -165,8 +165,8 @@ function MyReviewItem({ review }: { review: Review }) {
     updateMutation.mutate(
       {
         reviewId: review.reviewId,
-        // imageUrls는 @NotNull — 이미지 편집 UI는 없으므로 기존 이미지 유지
-        data: { rating, content: content.trim(), imageUrls: review.imageUrls ?? [] },
+        // retainedImageUrls는 @NotNull — 이미지 편집 UI는 없으므로 기존 이미지 전부 유지
+        data: { rating, content: content.trim(), retainedImageUrls: review.images ?? [] },
       },
       { onSuccess: () => setEditing(false) }
     );
