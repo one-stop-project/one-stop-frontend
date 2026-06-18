@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { authApi } from '@/domains/auth/authApi';
 import { userApi } from '@/domains/user/userApi';
@@ -12,6 +13,7 @@ import { PageSpinner } from '@/components/common/Spinner';
 export default function OAuth2CallbackPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const login = useAuthStore((s) => s.login);
   const ran = useRef(false);
 
@@ -40,6 +42,8 @@ export default function OAuth2CallbackPage() {
           accessToken,
           expiresIn
         );
+        // 게스트 장바구니 캐시 제거 — 병합된 회원 장바구니를 새로 불러오게 함
+        queryClient.removeQueries({ queryKey: ['cart'] });
         // URL에서 code 제거(뒤로가기 시 재실행 방지)
         window.history.replaceState(null, '', '/oauth2/callback');
         navigate('/', { replace: true });
@@ -48,7 +52,7 @@ export default function OAuth2CallbackPage() {
         fallback();
       }
     })();
-  }, [params, navigate, login]);
+  }, [params, navigate, login, queryClient]);
 
   return <PageSpinner />;
 }

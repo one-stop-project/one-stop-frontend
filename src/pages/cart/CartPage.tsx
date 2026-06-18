@@ -59,7 +59,12 @@ export default function CartPage() {
     const cartItemIds = selectedItems
       .map((i) => i.cartItemId)
       .filter((id): id is number => id != null);
-    if (cartItemIds.length === 0) return;
+    // 정상 흐름에선 로그인 장바구니에 cartItemId가 항상 존재. 비어 있으면 병합 전 게스트 데이터가 남은 상태이므로
+    // 무음으로 멈추지 말고 새로고침을 안내한다.
+    if (cartItemIds.length === 0) {
+      toast.error('장바구니 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
     navigate('/checkout', { state: { cartItemIds, subtotal } });
   };
 
