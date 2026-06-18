@@ -4,6 +4,7 @@ import { Plus, Trash2, ImagePlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCreateProductMutation } from '@/hooks/queries/useSellerQuery';
 import { useCategoriesQuery } from '@/hooks/queries/useProductQuery';
+import type { Category } from '@/domains/product/productApi';
 import { TagInput } from '@/components/product/TagInput';
 
 interface ItemForm {
@@ -117,24 +118,16 @@ export default function SellerProductsNewPage() {
               카테고리 <span className="text-primary-600">*</span>
               <span className="text-xs text-gray-400 ml-1">(1~3개 선택)</span>
             </label>
-            <div className="flex flex-wrap gap-2">
-              {categories?.map((c) => {
-                const selected = categoryIds.includes(c.id);
-                return (
-                  <button
-                    type="button"
-                    key={c.id}
-                    onClick={() => toggleCategory(c.id)}
-                    className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
-                      selected
-                        ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                );
-              })}
+            <div className="flex flex-col items-start gap-1.5 max-h-72 overflow-y-auto">
+              {categories?.map((c) => (
+                <CategoryPickRow
+                  key={c.id}
+                  cat={c}
+                  depth={0}
+                  selectedIds={categoryIds}
+                  onToggle={toggleCategory}
+                />
+              ))}
             </div>
           </div>
 
@@ -287,5 +280,45 @@ export default function SellerProductsNewPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// 카테고리 트리(대>중>소)를 깊이만큼 들여쓰며 재귀로 그려 모든 단계를 선택 가능하게 함
+function CategoryPickRow({
+  cat,
+  depth,
+  selectedIds,
+  onToggle,
+}: {
+  cat: Category;
+  depth: number;
+  selectedIds: number[];
+  onToggle: (id: number) => void;
+}) {
+  const selected = selectedIds.includes(cat.id);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => onToggle(cat.id)}
+        style={{ marginLeft: `${depth * 16}px` }}
+        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+          selected
+            ? 'bg-primary-600 text-white border-primary-600'
+            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+        }`}
+      >
+        {cat.name}
+      </button>
+      {cat.children?.map((child) => (
+        <CategoryPickRow
+          key={child.id}
+          cat={child}
+          depth={depth + 1}
+          selectedIds={selectedIds}
+          onToggle={onToggle}
+        />
+      ))}
+    </>
   );
 }

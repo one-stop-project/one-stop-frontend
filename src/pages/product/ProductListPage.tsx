@@ -4,6 +4,7 @@ import {useCategoriesQuery, useProductListQuery} from '@/hooks/queries/useProduc
 import {ProductCard, ProductCardSkeleton} from '@/components/product/ProductCard';
 import {EmptyState} from '@/components/common/EmptyState';
 import {parseId} from '@/utils/parseId';
+import type {Category} from '@/domains/product/productApi';
 
 // ★ 백엔드 SortType enum과 1:1 일치 (LATEST / PRICE_ASC / PRICE_DESC / POPULAR)
 //   기존 'salesCount,desc' / 'viewCount,desc' (Spring Pageable 형식)는
@@ -82,18 +83,13 @@ export default function ProductListPage() {
                 </button>
               </li>
               {(categories ?? []).map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    onClick={() => updateParam('categoryId', String(cat.id))}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                      categoryId === cat.id
-                        ? 'bg-primary-50 text-primary-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                </li>
+                <CategoryFilterItem
+                  key={cat.id}
+                  cat={cat}
+                  depth={0}
+                  activeId={categoryId}
+                  onSelect={(id) => updateParam('categoryId', String(id))}
+                />
               ))}
             </ul>
           </div>
@@ -165,5 +161,45 @@ export default function ProductListPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 카테고리 트리(대>중>소)를 깊이만큼 들여쓰며 재귀 렌더 — 모든 단계 클릭으로 필터 가능
+function CategoryFilterItem({
+  cat,
+  depth,
+  activeId,
+  onSelect,
+}: {
+  cat: Category;
+  depth: number;
+  activeId?: number;
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <>
+      <li>
+        <button
+          onClick={() => onSelect(cat.id)}
+          style={{ paddingLeft: `${12 + depth * 14}px` }}
+          className={`w-full text-left pr-3 py-2 text-sm rounded-lg transition-colors ${
+            activeId === cat.id
+              ? 'bg-primary-50 text-primary-700 font-medium'
+              : 'text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          {cat.name}
+        </button>
+      </li>
+      {cat.children?.map((child) => (
+        <CategoryFilterItem
+          key={child.id}
+          cat={child}
+          depth={depth + 1}
+          activeId={activeId}
+          onSelect={onSelect}
+        />
+      ))}
+    </>
   );
 }
