@@ -11,11 +11,13 @@ const CART_KEY = ['cart'];
 
 export function useCartQuery() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isBuyer = useAuthStore((s) => s.hasRole)('BUYER');
 
   return useQuery({
     queryKey: CART_KEY,
     queryFn: () => cartApi.getCart(),
-    enabled: isAuthenticated,
+    // 비로그인 게스트(guest_cart_id 쿠키)와 구매자만 장바구니 사용 — 판매자/관리자는 조회 안 함
+    enabled: !isAuthenticated || isBuyer,
     staleTime: 30 * 1000,
   });
 }

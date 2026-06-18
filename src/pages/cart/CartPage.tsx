@@ -9,12 +9,15 @@ import {
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
+import { useAuthStore } from '@/store/useAuthStore';
+import toast from 'react-hot-toast';
 
 const SHIPPING_FEE = 3000;
 const FREE_SHIPPING_THRESHOLD = 50000;
 
 export default function CartPage() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: cart, isLoading } = useCartQuery();
   const updateMutation = useUpdateCartItemMutation();
   const removeMutation = useRemoveCartItemMutation();
@@ -46,6 +49,12 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) return;
+    // 주문 생성은 백엔드 BUYER 전용 — 비로그인 게스트는 로그인으로 유도(로그인 시 장바구니 병합)
+    if (!isAuthenticated) {
+      toast.error('주문하려면 로그인이 필요합니다.');
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
+      return;
+    }
     // 장바구니 주문 = orderType CART + cartItemIds(로그인 장바구니의 행 id). 주문 후 백엔드가 장바구니에서 비움.
     const cartItemIds = selectedItems
       .map((i) => i.cartItemId)
