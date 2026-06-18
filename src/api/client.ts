@@ -26,10 +26,16 @@ export const apiClient: AxiosInstance = axios.create({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Request 인터셉터 — Access Token 주입
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 이 경로들은 액세스 토큰이 아니라 RT 쿠키/무인증으로 처리된다.
+// 만료된 토큰을 붙이면 백엔드 JWT 필터가 파싱 단계에서 401을 내버려 refresh 자체가 막히므로
+// (= AT 만료 시마다 자동 갱신 대신 강제 로그아웃) Authorization 헤더를 붙이지 않는다.
+const NO_BEARER_PATHS = ['/auth/refresh', '/auth/login', '/auth/signup', '/auth/oauth2/exchange'];
+
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
-    if (token && config.headers) {
+    const skipBearer = NO_BEARER_PATHS.some((p) => config.url?.includes(p));
+    if (token && config.headers && !skipBearer) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -78,6 +84,8 @@ apiClient.interceptors.response.use(
               reject(error);
               return;
             }
+            // 재시도 표시 — 큐에서 풀린 요청이 또 401나도 refresh 루프를 다시 타지 않게 한다
+            originalRequest._retry = true;
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
