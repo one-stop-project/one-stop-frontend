@@ -74,6 +74,18 @@ export default function PaymentPage() {
             <span className="text-gray-600">상품 금액</span>
             <span>{formatPrice(order.totalPrice)}</span>
           </div>
+          {order.discountPrice > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">쿠폰 할인</span>
+              <span className="text-primary-600">-{formatPrice(order.discountPrice)}</span>
+            </div>
+          )}
+          {order.usedPoint > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">포인트 사용</span>
+              <span className="text-primary-600">-{formatPrice(order.usedPoint)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-600">배송비</span>
             <span>{order.deliveryFee === 0 ? '무료' : formatPrice(order.deliveryFee)}</span>
