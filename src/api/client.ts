@@ -42,14 +42,15 @@ apiClient.interceptors.request.use(
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
+// token=문자열이면 갱신 성공(해당 토큰으로 재시도), null이면 갱신 실패(대기 요청을 실패로 깨움)
+let refreshSubscribers: Array<(token: string | null) => void> = [];
 
-function onTokenRefreshed(token: string) {
+function onTokenRefreshed(token: string | null) {
   refreshSubscribers.forEach((cb) => cb(token));
   refreshSubscribers = [];
 }
 
-function addRefreshSubscriber(cb: (token: string) => void) {
+function addRefreshSubscriber(cb: (token: string | null) => void) {
   refreshSubscribers.push(cb);
 }
 
@@ -70,8 +71,13 @@ apiClient.interceptors.response.use(
     ) {
       if (isRefreshing) {
         // 이미 refresh 중이면 큐에 대기
-        return new Promise((resolve) => {
-          addRefreshSubscriber((token: string) => {
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber((token: string | null) => {
+            // 갱신 실패(token=null)면 대기 요청도 실패로 끝내 영구 멈춤(무한 스피너)을 막는다
+            if (!token) {
+              reject(error);
+              return;
+            }
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${token}`;
             }
@@ -98,8 +104,8 @@ apiClient.interceptors.response.use(
         }
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // Refresh 실패 → 로그아웃 처리
-        refreshSubscribers = [];
+        // Refresh 실패 → 대기 중인 요청들을 실패로 깨운 뒤(버리지 않음) 로그아웃 처리
+        onTokenRefreshed(null);
         clearAccessToken();
         toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
         window.location.href = '/login';
