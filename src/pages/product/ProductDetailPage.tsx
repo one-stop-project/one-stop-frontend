@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp, Sparkles } from 'lucide-react';
 import { useProductDetailQuery, useRelatedProductsQuery } from '@/hooks/queries/useProductQuery';
@@ -27,6 +27,14 @@ export default function ProductDetailPage() {
   const addToCart = useAddToCartMutation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasRole = useAuthStore((s) => s.hasRole);
+
+  // 관련 상품으로 이동하면 라우트 param만 바뀌고 리마운트되지 않으므로
+  // 상품이 바뀔 때 옵션/수량/이미지 선택 상태를 직접 초기화한다(대표 이미지 깨짐 방지).
+  useEffect(() => {
+    setSelectedItemId(null);
+    setQuantity(1);
+    setImageIndex(0);
+  }, [productId]);
 
   if (productId === null || isError) {
     return (
