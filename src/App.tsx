@@ -53,6 +53,7 @@ import AdminProductsPage from '@/pages/admin/AdminProductsPage';
 import AdminSellersPage from '@/pages/admin/AdminSellersPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import AdminCategoriesPage from '@/pages/admin/AdminCategoriesPage';
+import AdminCouponsPage from '@/pages/admin/AdminCouponsPage';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -124,6 +125,7 @@ export default function App() {
                                 <Route path="/admin/sellers" element={<AdminSellersPage />} />
                                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
                                 <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+                                <Route path="/admin/coupons" element={<AdminCouponsPage />} />
                             </Route>
                         </Route>
 
