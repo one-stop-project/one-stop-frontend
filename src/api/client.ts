@@ -109,8 +109,11 @@ apiClient.interceptors.response.use(
     }
 
     // 에러 메시지 표시 (선택적)
-    const message = error.response?.data?.message || '요청 처리 중 오류가 발생했습니다.';
-    const code = error.response?.data?.code;
+    // 검증 실패(@Valid) 응답은 errors[]에 필드별 사유가 담겨 옴 — 두루뭉술한 message 대신 실제 사유를 보여줌
+    const data = error.response?.data;
+    const fieldReason = data?.errors?.map((e) => e.reason).filter(Boolean).join('\n');
+    const message = fieldReason || data?.message || '요청 처리 중 오류가 발생했습니다.';
+    const code = data?.code;
 
     // 특정 에러만 자동 토스트 (silent 옵션 지원)
     if (!(originalRequest as any)?._silent) {
