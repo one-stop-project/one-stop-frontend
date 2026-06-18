@@ -39,9 +39,11 @@ async function parseSseStream(
 
 export function useNotificationSse() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // 알림 구독(/api/notifications/**)은 백엔드에서 BUYER 역할만 허용 — 그 외 역할은 연결하지 않음
+  const isBuyer = useAuthStore((s) => s.hasRole)('BUYER');
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !isBuyer) return;
     let stopped = false;
     let currentAbort: AbortController | null = null;
 
@@ -63,6 +65,8 @@ export function useNotificationSse() {
               } catch {
                 stopped = true; // RT도 만료 → 루프 종료
               }
+            } else if (res.status === 403) {
+              stopped = true; // 권한 없음(구매자 아님) → 무한 재시도 방지, 루프 종료
             } else {
               await new Promise((r) => setTimeout(r, 5000));
             }
@@ -88,5 +92,5 @@ export function useNotificationSse() {
       stopped = true;
       currentAbort?.abort();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isBuyer]);
 }
