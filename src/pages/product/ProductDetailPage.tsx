@@ -26,6 +26,7 @@ export default function ProductDetailPage() {
   const { data: related } = useRelatedProductsQuery(productId);
   const addToCart = useAddToCartMutation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasRole = useAuthStore((s) => s.hasRole);
 
   if (productId === null || isError) {
     return (
@@ -62,6 +63,10 @@ export default function ProductDetailPage() {
       toast.error('로그인이 필요합니다.');
       return;
     }
+    if (!hasRole('BUYER')) {
+      toast.error('구매자 계정만 이용할 수 있습니다.');
+      return;
+    }
     if (!selectedItemId) {
       toast.error('옵션을 선택해주세요.');
       return;
@@ -72,6 +77,10 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!isAuthenticated) {
       toast.error('로그인이 필요합니다.');
+      return;
+    }
+    if (!hasRole('BUYER')) {
+      toast.error('구매자 계정만 이용할 수 있습니다.');
       return;
     }
     if (!selectedItemId) {

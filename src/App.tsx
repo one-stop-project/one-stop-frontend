@@ -81,23 +81,24 @@ export default function App() {
                             <Route path="/products" element={<ProductListPage />} />
                             <Route path="/products/:id" element={<ProductDetailPage />} />
 
-                            {/* 인증 필요 */}
+                            {/* 인증만 필요 (역할 무관) — 장바구니·내정보·비밀번호·탈퇴 */}
                             <Route element={<ProtectedRoute />}>
                                 <Route path="/cart" element={<CartPage />} />
+                                <Route path="/mypage" element={<MyPage />} />
+                                <Route path="/mypage/password" element={<PasswordChangePage />} />
+                                <Route path="/mypage/withdraw" element={<WithdrawPage />} />
+                            </Route>
+
+                            {/* 구매자 전용(BUYER) — 백엔드가 BUYER 역할만 허용하는 주문·결제·쿠폰·포인트·리뷰 */}
+                            <Route element={<ProtectedRoute roles="BUYER" />}>
                                 <Route path="/checkout" element={<CheckoutPage />} />
                                 <Route path="/payment/:id" element={<PaymentPage />} />
                                 <Route path="/orders" element={<OrderListPage />} />
                                 <Route path="/orders/:id" element={<OrderDetailPage />} />
                                 <Route path="/orders/:id/complete" element={<OrderCompletePage />} />
-
-                                {/* 👈 추가된 부분 2: 로그인한 사용자만 접근 가능한 쿠폰 페이지 */}
                                 <Route path="/coupons" element={<CouponsPage />} />
-
-                                <Route path="/mypage" element={<MyPage />} />
                                 <Route path="/mypage/reviews" element={<ReviewsPage />} />
                                 <Route path="/mypage/points" element={<PointsPage />} />
-                                <Route path="/mypage/password" element={<PasswordChangePage />} />
-                                <Route path="/mypage/withdraw" element={<WithdrawPage />} />
                             </Route>
                         </Route>
 
