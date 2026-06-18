@@ -72,11 +72,15 @@ export default function CheckoutPage() {
     }
   }, [me]);
 
+  // 쿠폰 변경으로 pointMax가 줄어들면 usedPoint를 자동 조정
+  const pointMax = Math.min(balance, Math.max(0, subtotal - couponDiscount));
+  useEffect(() => {
+    if (usedPoint > pointMax) setUsedPoint(pointMax);
+  }, [pointMax]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!isCart && (!items || items.length === 0)) {
     return <Navigate to="/cart" replace />;
   }
-
-  const pointMax = Math.min(balance, subtotal > 0 ? subtotal : balance);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
