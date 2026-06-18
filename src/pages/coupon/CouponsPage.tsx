@@ -10,6 +10,7 @@ import {
   MyCoupon,
   CouponDiscountType,
 } from '@/domains/coupon/couponApi';
+import { Pagination } from '@/components/common/Pagination';
 
 type Tab = 'available' | 'my';
 
@@ -118,7 +119,8 @@ function AvailableTab() {
 
 // ── 내 쿠폰 ──
 function MyTab() {
-  const { data, isLoading } = useMyCouponsQuery();
+  const [page, setPage] = useState(0);
+  const { data, isLoading } = useMyCouponsQuery({ page, size: 10 });
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-400">불러오는 중...</div>;
@@ -178,6 +180,11 @@ function MyTab() {
           </div>
         );
       })}
+      <Pagination
+        page={page}
+        totalPages={data?.totalPages ?? 1}
+        onChange={setPage}
+      />
     </div>
   );
 }

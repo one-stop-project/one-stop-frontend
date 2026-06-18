@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { useSellerProductsQuery, useDeleteProductMutation } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Pagination } from '@/components/common/Pagination';
 import { formatPrice } from '@/utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -50,6 +51,7 @@ export default function SellerProductsPage() {
           }
         />
       ) : (
+        <>
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -126,6 +128,12 @@ export default function SellerProductsPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          totalPages={data?.totalPages ?? 1}
+          onChange={setPage}
+        />
+        </>
       )}
     </div>
   );
