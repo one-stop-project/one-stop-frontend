@@ -46,7 +46,12 @@ export default function OAuth2CallbackPage() {
         queryClient.removeQueries({ queryKey: ['cart'] });
         // URL에서 code 제거(뒤로가기 시 재실행 방지)
         window.history.replaceState(null, '', '/oauth2/callback');
-        navigate('/', { replace: true });
+        // 기존 판매자·관리자 계정도 소셜 로그인할 수 있으므로(백엔드가 기존 역할 유지),
+        // 일반 로그인과 동일하게 역할별 시작 화면으로 보낸다.
+        if (me.role === 'SELLER') navigate('/seller', { replace: true });
+        else if (me.role === 'ADMIN' || me.role === 'SUPER_ADMIN')
+          navigate('/admin', { replace: true });
+        else navigate('/', { replace: true });
       } catch {
         toast.error('소셜 로그인에 실패했습니다. 다시 시도해주세요.');
         fallback();
