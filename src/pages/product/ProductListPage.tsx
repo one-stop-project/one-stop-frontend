@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {ChevronRight} from 'lucide-react';
 import {useCategoriesQuery, useProductListQuery} from '@/hooks/queries/useProductQuery';
@@ -34,6 +34,13 @@ export default function ProductListPage() {
   const sort: SortOption = VALID_SORTS.includes(rawSort as SortOption)
     ? (rawSort as SortOption)
     : 'LATEST';
+
+  // 검색어/카테고리/정렬이 바뀌면 페이지를 0으로 되돌린다.
+  // (헤더 검색은 updateParam을 거치지 않고 URL만 바꾸므로, 여기서 동기화하지 않으면
+  //  이전 페이지 인덱스가 남아 빈 결과 페이지에 갇힌다.)
+  useEffect(() => {
+    setPage(0);
+  }, [keyword, categoryId, sort]);
 
   const { data: categories } = useCategoriesQuery();
   const { data, isLoading } = useProductListQuery({
