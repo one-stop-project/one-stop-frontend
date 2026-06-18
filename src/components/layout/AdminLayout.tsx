@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Store, ShoppingBag, FolderTree, Ticket, Crown, ShieldCheck, BarChart3, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Package, Store, ShoppingBag, FolderTree, Ticket, Crown, ShieldCheck, BarChart3, ShieldAlert, LucideIcon } from 'lucide-react';
 import { DashboardLayout } from './DashboardLayout';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -19,6 +19,7 @@ const NAV: AdminNav[] = [
   { to: '/admin/subscriptions', label: '구독 관리', icon: Crown },
   { to: '/admin/analytics', label: '운영 분석', icon: BarChart3 },
   { to: '/admin/users', label: '권한 관리', icon: ShieldCheck, superAdminOnly: true },
+  { to: '/admin/system', label: '시스템 점검', icon: ShieldAlert, superAdminOnly: true },
 ];
 
 export function AdminLayout() {

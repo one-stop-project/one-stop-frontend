@@ -57,6 +57,7 @@ import AdminCouponsPage from '@/pages/admin/AdminCouponsPage';
 import AdminSubscriptionsPage from '@/pages/admin/AdminSubscriptionsPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminAnalyticsPage from '@/pages/admin/AdminAnalyticsPage';
+import AdminSystemPage from '@/pages/admin/AdminSystemPage';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -135,6 +136,7 @@ export default function App() {
                                 {/* 최고관리자(SUPER_ADMIN) 전용 */}
                                 <Route element={<ProtectedRoute roles="SUPER_ADMIN" />}>
                                     <Route path="/admin/users" element={<AdminUsersPage />} />
+                                    <Route path="/admin/system" element={<AdminSystemPage />} />
                                 </Route>
                             </Route>
                         </Route>
