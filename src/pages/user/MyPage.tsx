@@ -186,6 +186,8 @@ function SubscriptionSection() {
   const cancel = useCancelSubscriptionMutation();
 
   const active = sub != null && sub.status === 'ACTIVE';
+  // 해지(CANCELLED)는 종료일까지 혜택이 유지되고 재구독이 막혀 있다(백엔드 규칙).
+  const cancelledButValid = sub != null && sub.status === 'CANCELLED';
 
   const handleCancel = () => {
     const reason = prompt('구독 해지 사유를 입력하세요');
@@ -222,11 +224,24 @@ function SubscriptionSection() {
             구독 해지 →
           </button>
         </div>
+      ) : cancelledButValid ? (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">해지됨</span>
+            <span className="text-sm text-gray-600">종료일까지 {sub!.daysLeft}일 혜택 유지</span>
+          </div>
+          <dl className="space-y-2 text-sm mb-3">
+            <Row label="시작일" value={formatDate(sub!.startAt)} />
+            <Row label="혜택 종료일" value={formatDate(sub!.endAt)} />
+          </dl>
+          <p className="text-xs text-gray-400">
+            해지하셨지만 종료일까지는 멤버십 혜택이 유지됩니다. 재구독은 기간 종료 후 가능합니다.
+          </p>
+        </div>
       ) : (
         <div>
           <p className="text-sm text-gray-600 mb-4">
             멤버십에 가입하면 주문 시 할인 등 혜택을 받을 수 있어요.
-            {sub != null && sub.status !== 'ACTIVE' && ' (현재 미구독 상태)'}
           </p>
           <button
             type="button"
