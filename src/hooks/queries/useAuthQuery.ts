@@ -46,6 +46,10 @@ export function useLoginMutation() {
       else if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN') navigate('/admin');
       else navigate('/');
     },
+    onError: (error: any) => {
+      // 전역 인터셉터는 401 토스트를 의도적으로 막아두므로(보안), 로그인 실패는 여기서 직접 안내한다.
+      toast.error(error?.response?.data?.message ?? '이메일 또는 비밀번호를 확인해주세요.');
+    },
   });
 }
 
