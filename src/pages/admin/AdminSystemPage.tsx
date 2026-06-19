@@ -18,7 +18,6 @@ const SEVERITY_COLOR: Record<SecuritySeverity, string> = {
   HIGH: 'bg-orange-100 text-orange-700',
   MEDIUM: 'bg-yellow-100 text-yellow-700',
   INFO: 'bg-gray-100 text-gray-600',
-  AUTH: 'bg-blue-100 text-blue-700',
 };
 
 type AuditTab = 'critical' | 'high-risk';

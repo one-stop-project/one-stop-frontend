@@ -30,7 +30,9 @@ export interface PointInconsistencyReport {
 
 // ── 보안 감사 ──────────────────────────────────────
 
-export type SecuritySeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'INFO' | 'AUTH';
+// 백엔드 Severity enum 과 1:1 (CRITICAL/HIGH/MEDIUM/INFO). 'AUTH'는 severity가 아니라
+// category 값이라 여기서 제외한다.
+export type SecuritySeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'INFO';
 
 // BE SecurityAuditLog (주요 필드)
 export interface SecurityAuditLog {

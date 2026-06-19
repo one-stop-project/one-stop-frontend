@@ -1,5 +1,4 @@
 import { apiClient, ApiResponse } from '@/api/client';
-import { Category } from '@/domains/product/productApi';
 
 /**
  * 관리자 카테고리 관리 API
@@ -17,14 +16,22 @@ export interface CategoryUpdateRequest {
   name: string;
 }
 
+// 백엔드 CategoryResponse 와 1:1 — 생성/수정 응답은 트리(children)가 아니라
+// 단일 노드(parentId 포함)를 돌려준다. 화면은 이 결과로 목록을 다시 불러온다.
+export interface AdminCategory {
+  id: number;
+  name: string;
+  parentId: number | null;
+}
+
 export const adminCategoryApi = {
-  create: async (data: CategoryCreateRequest): Promise<Category> => {
-    const res = await apiClient.post<ApiResponse<Category>>('/admin/categories', data);
+  create: async (data: CategoryCreateRequest): Promise<AdminCategory> => {
+    const res = await apiClient.post<ApiResponse<AdminCategory>>('/admin/categories', data);
     return res.data.data;
   },
 
-  update: async (categoryId: number, data: CategoryUpdateRequest): Promise<Category> => {
-    const res = await apiClient.patch<ApiResponse<Category>>(
+  update: async (categoryId: number, data: CategoryUpdateRequest): Promise<AdminCategory> => {
+    const res = await apiClient.patch<ApiResponse<AdminCategory>>(
       `/admin/categories/${categoryId}`,
       data
     );
