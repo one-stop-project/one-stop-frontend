@@ -227,7 +227,8 @@ export default function ProductDetailPage() {
             </label>
 
             <div className="space-y-2">
-              {Array.from({ length: tierCount }).map((_, k) => {
+              {uniformMulti ? (
+                Array.from({ length: tierCount }).map((_, k) => {
                 const label = axisLabel(k);
                 const selected = selections[k];
                 const enabled = k <= selections.length; // 앞 축을 골라야 다음 축 활성화
@@ -290,7 +291,66 @@ export default function ProductDetailPage() {
                     )}
                   </div>
                 );
-              })}
+                })
+              ) : (
+                // 옵션값이 없거나 한 축뿐인 일반 상품 — 아이템을 그대로 목록화하고
+                // itemId로 직접 선택한다(문자열 매칭이 아니라). 옵션명이 비면 '기본 옵션'.
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenTier((o) => (o === 0 ? null : 0))}
+                    className={`w-full px-4 py-3 flex items-center justify-between rounded-lg border-2 transition-colors hover:border-gray-300 ${
+                      openTier === 0 ? 'border-primary-600' : 'border-gray-200'
+                    }`}
+                  >
+                    <span className={selectedItem ? 'font-medium text-gray-900' : 'text-gray-400'}>
+                      {selectedItem ? selectedItem.optionName?.trim() || '기본 옵션' : '옵션을 선택하세요'}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className={`text-gray-400 transition-transform ${openTier === 0 ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {openTier === 0 && (
+                    <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 divide-y divide-gray-100 overflow-hidden">
+                      {product.items.length === 0 && (
+                        <p className="px-4 py-3 text-sm text-gray-400">구매 가능한 옵션이 없습니다.</p>
+                      )}
+                      {product.items.map((it) => {
+                        const checked = selectedItemId === it.itemId;
+                        return (
+                          <button
+                            key={it.itemId}
+                            type="button"
+                            disabled={it.soldOut}
+                            onClick={() => {
+                              setSelectedItemId(it.itemId);
+                              setQuantity(1);
+                              setOpenTier(null);
+                            }}
+                            className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-white ${
+                              it.soldOut ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <span
+                              className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
+                                checked ? 'bg-primary-600 border-primary-600' : 'border-gray-300 bg-white'
+                              }`}
+                            >
+                              {checked && <Check size={14} className="text-white" />}
+                            </span>
+                            <span className="flex-1 text-gray-800">
+                              {it.optionName?.trim() || '기본 옵션'}
+                            </span>
+                            {it.soldOut && <span className="text-xs text-gray-400">품절</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
