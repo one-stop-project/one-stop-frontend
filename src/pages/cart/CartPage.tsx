@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Minus, Plus, X, ChevronRight } from 'lucide-react';
 import {
@@ -23,6 +23,17 @@ export default function CartPage() {
   const updateMutation = useUpdateCartItemMutation();
   const removeMutation = useRemoveCartItemMutation();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // 장바구니가 처음 로드되면 전체 선택을 기본값으로 둔다.
+  // (비로그인 → 로그인 시 병합된 상품도 선택 안 된 채로 넘어오지 않도록)
+  // 첫 로드 때만 동작하므로 이후 사용자가 개별 해제한 선택은 보존된다.
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (cart && !didInit.current) {
+      didInit.current = true;
+      setSelectedIds(new Set((cart.content ?? []).map((i) => i.itemId)));
+    }
+  }, [cart]);
 
   if (isLoading) return <PageSpinner />;
 
