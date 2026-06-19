@@ -30,7 +30,7 @@ export default function OrderDetailPage() {
   const orderId = parseId(id);
 
   const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
-  const { data: deliveries } = useOrderDeliveriesQuery(orderId);
+  const { data: deliveries, isError: deliveriesError } = useOrderDeliveriesQuery(orderId);
   const cancelMutation = useCancelOrderMutation();
 
   if (orderId === null || isError) {
@@ -107,19 +107,30 @@ export default function OrderDetailPage() {
         </div>
       </section>
 
-      {/* 배송 추적 */}
-      {deliveries && deliveries.length > 0 && (
+      {/* 배송 추적 — 보조 정보. 못 불러와도(배송 미생성/일시 오류) 주문 본문엔 영향 없음 */}
+      {deliveriesError ? (
         <section className="card p-6 mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-            <Truck size={20} className="text-primary-600" />
+            <Truck size={20} className="text-gray-400" />
             배송 추적
           </h2>
-          <div className="space-y-3">
-            {deliveries.map((d) => (
-              <DeliveryTrackItem key={d.deliveryId} delivery={d} />
-            ))}
-          </div>
+          <p className="text-sm text-gray-400">배송 정보를 불러오지 못했습니다.</p>
         </section>
+      ) : (
+        deliveries &&
+        deliveries.length > 0 && (
+          <section className="card p-6 mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+              <Truck size={20} className="text-primary-600" />
+              배송 추적
+            </h2>
+            <div className="space-y-3">
+              {deliveries.map((d) => (
+                <DeliveryTrackItem key={d.deliveryId} delivery={d} />
+              ))}
+            </div>
+          </section>
+        )
       )}
 
       {/* 결제 요약 */}

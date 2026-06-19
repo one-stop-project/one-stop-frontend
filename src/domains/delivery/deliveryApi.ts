@@ -30,13 +30,20 @@ export interface DeliveryHistory {
 
 export const deliveryApi = {
   getByOrder: async (orderId: number): Promise<Delivery[]> => {
-    const res = await apiClient.get<ApiResponse<Delivery[]>>(`/orders/${orderId}/deliveries`);
+    // 배송 추적은 주문 상세의 보조 정보 — 못 불러와도 주문 본문은 정상 표시되므로
+    // 전역 '서버 오류' 토스트를 띄우지 않고(_silent) 화면에서 조용히 처리한다.
+    const res = await apiClient.get<ApiResponse<Delivery[]>>(
+      `/orders/${orderId}/deliveries`,
+      { _silent: true } as never
+    );
     return res.data.data;
   },
 
   getHistory: async (deliveryId: number): Promise<DeliveryHistory> => {
+    // 배송 이력도 보조 정보 — 실패 시 전역 토스트 억제, 화면에서 조용히 처리한다.
     const res = await apiClient.get<ApiResponse<DeliveryHistory>>(
-      `/deliveries/${deliveryId}/history`
+      `/deliveries/${deliveryId}/history`,
+      { _silent: true } as never
     );
     return res.data.data;
   },
