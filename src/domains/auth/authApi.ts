@@ -11,9 +11,11 @@ export interface SignUpRequest {
     name: string;
     phone: string;
     address: string;
+    detailAddress?: string;    // ★ 상세주소 — 백엔드 SignUpRequest.detailAddress
     role: UserRole;            // ★ 추가 — 백엔드 @NotNull UserRole 충족 ('BUYER' | 'SELLER')
     shopName?: string;
     businessNumber?: string;
+    bankName?: string;         // ★ 은행명 — 백엔드 Seller.bankName
     bankAccount?: string;
 }
 
