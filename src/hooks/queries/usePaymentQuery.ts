@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { paymentApi, PaymentRequest } from '@/domains/payment/paymentApi';
 
@@ -11,7 +10,7 @@ export function useApprovePaymentMutation() {
     mutationFn: (data: PaymentRequest) => paymentApi.approve(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast.success('결제가 완료되었습니다.');
+      // 주문완료 토스트는 제거(완료 화면으로 바로 이동) — 중복 안내 방지
       navigate(`/orders/${data.orderId}/complete`);
     },
   });
