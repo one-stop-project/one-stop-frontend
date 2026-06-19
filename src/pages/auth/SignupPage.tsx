@@ -5,6 +5,15 @@ import {useSignupMutation} from '@/hooks/queries/useAuthQuery';
 
 type UserType = 'BUYER' | 'SELLER';
 
+// 백엔드 검증 규칙과 동일하게 맞춤 (SignUpRequest)
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+const PHONE_RE = /^010-\d{4}-\d{4}$/;
+// @ 앞뒤로 문자가 있고 도메인에 점(.)이 있는 일반적인 이메일 형식
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldKey = 'email' | 'password' | 'passwordConfirm' | 'phone';
+type FieldErrors = Partial<Record<FieldKey, string>>;
+
 export default function SignupPage() {
   const [userType, setUserType] = useState<UserType>('BUYER');
   const [form, setForm] = useState({
@@ -14,63 +23,70 @@ export default function SignupPage() {
     name: '',
     phone: '',
     address: '',
+    detailAddress: '',
     shopName: '',
     businessNumber: '',
+    bankName: '',
     bankAccount: '',
   });
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const signupMutation = useSignupMutation();
 
-    // 백엔드 검증 규칙과 동일하게 맞춤 (SignUpRequest)
-    const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
-    const PHONE_RE = /^010-\d{4}-\d{4}$/;
+  // 전화번호 입력 시 자동으로 하이픈 삽입 (010-1234-5678)
+  const formatPhone = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length < 4) return d;
+    if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
+    return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+  };
 
-    // 전화번호 입력 시 자동으로 하이픈 삽입 (010-1234-5678)
-    const formatPhone = (v: string) => {
-        const d = v.replace(/\D/g, '').slice(0, 11);
-        if (d.length < 4) return d;
-        if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
-        return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-    };
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
 
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
+    // 검증 실패는 알림창 대신 각 칸 아래 인라인 에러로 한 번에 표시
+    const next: FieldErrors = {};
+    if (!EMAIL_RE.test(form.email)) {
+      next.email = '이메일 형식이 올바르지 않습니다. 예: email@example.com';
+    }
+    if (!PASSWORD_RE.test(form.password)) {
+      next.password = '영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해 8자 이상이어야 합니다.';
+    }
+    if (form.password !== form.passwordConfirm) {
+      next.passwordConfirm = '비밀번호가 일치하지 않습니다.';
+    }
+    if (!PHONE_RE.test(form.phone)) {
+      next.phone = '전화번호 형식이 올바르지 않습니다. 예: 010-1234-5678';
+    }
 
-        if (!PASSWORD_RE.test(form.password)) {
-            alert('비밀번호는 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해 8자 이상이어야 합니다.');
-            return;
-        }
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
-        if (form.password !== form.passwordConfirm) {
-            alert('비밀번호가 일치하지 않습니다.');
-            return;
-        }
+    const { passwordConfirm, ...rest } = form;
 
-        if (!PHONE_RE.test(form.phone)) {
-            alert('전화번호 형식이 올바르지 않습니다. 예: 010-1234-5678');
-            return;
-        }
+    if (userType === 'BUYER') {
+      // BUYER: 판매자 전용 필드 제거 + role 포함 (주소·상세주소는 유지)
+      const { shopName, businessNumber, bankName, bankAccount, ...buyerRest } = rest;
+      signupMutation.mutate({
+        ...buyerRest,
+        role: 'BUYER',          // ★ 백엔드 @NotNull role 충족
+      });
+    } else {
+      // SELLER: 전체 필드 + role 포함
+      signupMutation.mutate({
+        ...rest,
+        role: 'SELLER',         // ★ 백엔드 @NotNull role 충족
+      });
+    }
+  };
 
-        const { passwordConfirm, ...rest } = form;
-
-        if (userType === 'BUYER') {
-            // BUYER: 판매자 전용 필드 제거 + role 포함
-            const { shopName, businessNumber, bankAccount, ...buyerRest } = rest;
-            signupMutation.mutate({
-                ...buyerRest,
-                role: 'BUYER',          // ★ 백엔드 @NotNull role 충족
-            });
-        } else {
-            // SELLER: 전체 필드 + role 포함
-            signupMutation.mutate({
-                ...rest,
-                role: 'SELLER',         // ★ 백엔드 @NotNull role 충족
-            });
-        }
-    };
-
-  const update = (field: keyof typeof form, value: string) =>
+  const update = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    // 사용자가 그 칸을 고치면 해당 칸의 에러는 즉시 지운다
+    setErrors((prev) =>
+      prev[field as FieldKey] ? { ...prev, [field]: undefined } : prev
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-gray-50 py-12 px-4">
@@ -104,9 +120,9 @@ export default function SignupPage() {
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* 공통 필드 */}
-            <FormField label="이메일" required>
+            <FormField label="이메일" required error={errors.email}>
               <input
                 type="email"
                 className="input-field"
@@ -118,7 +134,7 @@ export default function SignupPage() {
             </FormField>
 
             <div className="grid grid-cols-2 gap-3">
-              <FormField label="비밀번호" required>
+              <FormField label="비밀번호" required error={errors.password}>
                 <input
                   type="password"
                   className="input-field"
@@ -128,7 +144,7 @@ export default function SignupPage() {
                   required
                 />
               </FormField>
-              <FormField label="비밀번호 확인" required>
+              <FormField label="비밀번호 확인" required error={errors.passwordConfirm}>
                 <input
                   type="password"
                   className="input-field"
@@ -149,7 +165,7 @@ export default function SignupPage() {
               />
             </FormField>
 
-            <FormField label="전화번호" required>
+            <FormField label="전화번호" required error={errors.phone}>
               <input
                 type="tel"
                 className="input-field"
@@ -166,8 +182,18 @@ export default function SignupPage() {
                 className="input-field"
                 value={form.address}
                 onChange={(e) => update('address', e.target.value)}
-                placeholder="서울시 강남구..."
+                placeholder="서울시 강남구 테헤란로 123"
                 required
+              />
+            </FormField>
+
+            <FormField label="상세주소">
+              <input
+                type="text"
+                className="input-field"
+                value={form.detailAddress}
+                onChange={(e) => update('detailAddress', e.target.value)}
+                placeholder="동·호수 등 상세주소 (선택)"
               />
             </FormField>
 
@@ -197,15 +223,30 @@ export default function SignupPage() {
                   />
                 </FormField>
 
-                <FormField label="정산 계좌">
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={form.bankAccount}
-                    onChange={(e) => update('bankAccount', e.target.value)}
-                    placeholder="은행명 + 계좌번호"
-                  />
-                </FormField>
+                {/* 정산 계좌 — 은행명과 계좌번호를 분리 입력 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="은행명" required>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={form.bankName}
+                      onChange={(e) => update('bankName', e.target.value)}
+                      placeholder="예: 국민은행"
+                      required={userType === 'SELLER'}
+                    />
+                  </FormField>
+
+                  <FormField label="계좌번호" required>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={form.bankAccount}
+                      onChange={(e) => update('bankAccount', e.target.value)}
+                      placeholder="'-' 없이 숫자만"
+                      required={userType === 'SELLER'}
+                    />
+                  </FormField>
+                </div>
               </div>
             )}
 
@@ -233,10 +274,12 @@ export default function SignupPage() {
 function FormField({
   label,
   required,
+  error,
   children,
 }: {
   label: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -246,6 +289,7 @@ function FormField({
         {required && <span className="text-primary-600 ml-0.5">*</span>}
       </label>
       {children}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
