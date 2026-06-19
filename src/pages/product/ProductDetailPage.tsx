@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp, Sparkles } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Store, Eye, TrendingUp, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { useProductDetailQuery, useRelatedProductsQuery } from '@/hooks/queries/useProductQuery';
 import { useAiReviewSummaryQuery } from '@/hooks/queries/useReviewQuery';
 import { useAddToCartMutation } from '@/hooks/queries/useCartQuery';
@@ -21,6 +21,8 @@ export default function ProductDetailPage() {
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
+  const [selections, setSelections] = useState<string[]>([]); // 축별 선택값 (컬러, 사이즈 …)
+  const [openTier, setOpenTier] = useState<number | null>(null); // 현재 펼쳐진 축
 
   const { data: product, isLoading, isError } = useProductDetailQuery(productId);
   const { data: related } = useRelatedProductsQuery(productId);
@@ -34,6 +36,8 @@ export default function ProductDetailPage() {
     setSelectedItemId(null);
     setQuantity(1);
     setImageIndex(0);
+    setSelections([]);
+    setOpenTier(null);
   }, [productId]);
 
   if (productId === null || isError) {
@@ -57,6 +61,52 @@ export default function ProductDetailPage() {
 
   const selectedItem = product.items.find((i) => i.itemId === selectedItemId);
   const finalPrice = selectedItem ? selectedItem.price * quantity : 0;
+
+  // ── 옵션 계층 분해 ──────────────────────────────────────────────
+  // 옵션값은 "값 / 값" 규칙으로 합쳐져 내려온다(예: "블랙 / M"). 모든 옵션이
+  // 똑같이 2칸 이상으로 쪼개질 때만 계층형(컬러→사이즈)으로 펼치고, 아니면
+  // 합쳐진 이름 그대로 단일 드롭다운으로 보여준다.
+  const rawParts = product.items.map((it) =>
+    it.optionName.split('/').map((s) => s.trim()).filter(Boolean)
+  );
+  const counts = rawParts.map((p) => p.length || 1);
+  const uniformMulti = counts.length > 0 && counts.every((c) => c === counts[0]) && counts[0] >= 2;
+  const tierCount = uniformMulti ? counts[0] : 1;
+  const parsedItems = product.items.map((it, idx) => ({
+    item: it,
+    parts: uniformMulti ? rawParts[idx] : [it.optionName],
+  }));
+  const axisLabel = (k: number) => (uniformMulti ? (product.optionNames[k] ?? '').trim() : '');
+
+  // 앞 단계 선택과 일치하는 아이템들에서 k번째 축의 고를 수 있는 값 목록
+  const tierValues = (k: number): string[] => {
+    const seen: string[] = [];
+    for (const p of parsedItems) {
+      if (!selections.slice(0, k).every((sel, i) => p.parts[i] === sel)) continue;
+      const v = p.parts[k];
+      if (v && !seen.includes(v)) seen.push(v);
+    }
+    return seen;
+  };
+  // 모든 축 값이 정확히 일치하는 단일 아이템
+  const itemForValues = (vals: string[]) =>
+    parsedItems.find(
+      (p) => p.parts.length === vals.length && vals.every((s, i) => p.parts[i] === s)
+    )?.item;
+
+  const chooseTier = (k: number, v: string) => {
+    const next = [...selections.slice(0, k), v];
+    setSelections(next);
+    if (k < tierCount - 1) {
+      setSelectedItemId(null);
+      setOpenTier(k + 1); // 다음 축을 자동으로 펼침
+    } else {
+      const found = itemForValues(next);
+      setSelectedItemId(found ? found.itemId : null);
+      setQuantity(1);
+      setOpenTier(null);
+    }
+  };
 
   // 대표 이미지 목록: imageUrls가 있으면 사용, 없으면 thumbnail
   const images =
@@ -169,32 +219,78 @@ export default function ProductDetailPage() {
 
           <hr className="my-6" />
 
-          {/* 옵션 선택 */}
+          {/* 옵션 선택 (계층형) — 축을 차례로 펼쳐 고른다(예: 컬러 → 사이즈) */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">옵션 선택</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              옵션 선택 <span className="text-gray-400 font-normal">(필수)</span>
+              <span className="text-red-500"> *</span>
+            </label>
+
             <div className="space-y-2">
-              {product.items.map((item) => (
-                <button
-                  key={item.itemId}
-                  onClick={() => setSelectedItemId(item.itemId)}
-                  disabled={item.soldOut}
-                  className={`w-full px-4 py-3 text-left rounded-lg border-2 transition-all ${
-                    selectedItemId === item.itemId
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  } ${item.soldOut ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{item.optionName}</p>
-                      <p className="text-sm text-gray-500">
-                        {item.soldOut ? '품절' : '구매 가능'}
-                      </p>
-                    </div>
-                    <p className="font-semibold">{formatPrice(item.price)}</p>
+              {Array.from({ length: tierCount }).map((_, k) => {
+                const label = axisLabel(k);
+                const selected = selections[k];
+                const enabled = k <= selections.length; // 앞 축을 골라야 다음 축 활성화
+                const isOpen = openTier === k;
+                return (
+                  <div key={k}>
+                    <button
+                      type="button"
+                      disabled={!enabled}
+                      onClick={() => enabled && setOpenTier(isOpen ? null : k)}
+                      className={`w-full px-4 py-3 flex items-center justify-between rounded-lg border-2 transition-colors ${
+                        isOpen ? 'border-primary-600' : 'border-gray-200'
+                      } ${enabled ? 'hover:border-gray-300' : 'opacity-50 cursor-not-allowed'}`}
+                    >
+                      <span className={selected ? 'font-medium text-gray-900' : 'text-gray-400'}>
+                        {selected
+                          ? label
+                            ? `${label} / ${selected}`
+                            : selected
+                          : label || '옵션을 선택하세요'}
+                      </span>
+                      <ChevronDown
+                        size={18}
+                        className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {isOpen && (
+                      <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 divide-y divide-gray-100 overflow-hidden">
+                        {tierValues(k).map((v) => {
+                          const isLeaf = k === tierCount - 1;
+                          const leafItem = isLeaf
+                            ? itemForValues([...selections.slice(0, k), v])
+                            : undefined;
+                          const soldOut = isLeaf && !!leafItem?.soldOut;
+                          const checked = selections[k] === v;
+                          return (
+                            <button
+                              key={v}
+                              type="button"
+                              disabled={soldOut}
+                              onClick={() => chooseTier(k, v)}
+                              className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors hover:bg-white ${
+                                soldOut ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                            >
+                              <span
+                                className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
+                                  checked ? 'bg-primary-600 border-primary-600' : 'border-gray-300 bg-white'
+                                }`}
+                              >
+                                {checked && <Check size={14} className="text-white" />}
+                              </span>
+                              <span className="flex-1 text-gray-800">{v}</span>
+                              {soldOut && <span className="text-xs text-gray-400">품절</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 
