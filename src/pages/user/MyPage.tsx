@@ -245,7 +245,9 @@ function SubscriptionSection() {
           </p>
           <button
             type="button"
-            onClick={() => subscribe.mutate()}
+            onClick={() => {
+              if (window.confirm('멤버십을 구독하시겠습니까?')) subscribe.mutate();
+            }}
             disabled={subscribe.isPending}
             className="btn-primary"
           >
