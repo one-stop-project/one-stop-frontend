@@ -13,6 +13,17 @@ export interface ProductSummary {
   viewCount: number;
 }
 
+// 백엔드 PopularProductResponse 와 1:1 — 일반 ProductSummary 와 달리
+// viewCount 가 없고 rank(인기 순위)가 추가로 내려온다.
+export interface PopularProduct {
+  productId: number;
+  name: string;
+  thumbnailUrl: string | null;
+  minPrice: number;
+  salesCount: number;
+  rank: number;
+}
+
 // 백엔드 ProductItemResponse 와 1:1
 export interface ProductItem {
   itemId: number;
@@ -74,8 +85,8 @@ export const productApi = {
   },
 
   // 인기 상품 — ★ 배열 응답(List), 파라미터는 limit (size 아님)
-  getPopular: async (limit: number = 10): Promise<ProductSummary[]> => {
-    const res = await apiClient.get<ApiResponse<ProductSummary[]>>('/products/popular', {
+  getPopular: async (limit: number = 10): Promise<PopularProduct[]> => {
+    const res = await apiClient.get<ApiResponse<PopularProduct[]>>('/products/popular', {
       params: { limit },
     });
     return res.data.data;
