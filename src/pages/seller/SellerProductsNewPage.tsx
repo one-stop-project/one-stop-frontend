@@ -69,6 +69,31 @@ export default function SellerProductsNewPage() {
       toast.error(`옵션은 최대 ${MAX_ITEMS}개까지 등록할 수 있습니다.`);
       return;
     }
+    // 옵션(아이템) 검증 — 빈 가격은 Number("")=0 이 되어 백엔드 @Min(100) 위반으로 등록 실패한다.
+    for (let i = 0; i < items.length; i++) {
+      const price = Number(items[i].price);
+      const stock = Number(items[i].stock);
+      if (!items[i].price.trim() || Number.isNaN(price) || price < 100) {
+        toast.error(`${i + 1}번 옵션의 가격을 100원 이상 입력해주세요.`);
+        return;
+      }
+      if (!items[i].stock.trim() || Number.isNaN(stock) || stock < 0) {
+        toast.error(`${i + 1}번 옵션의 재고를 0개 이상 입력해주세요.`);
+        return;
+      }
+    }
+    // 옵션이 2개 이상이면 옵션값이 비거나 중복되면 안 된다(같은 상품 내 옵션 구분 불가).
+    if (items.length > 1) {
+      const optionValues = items.map((i) => i.optionValue.trim());
+      if (optionValues.some((v) => v === '')) {
+        toast.error('옵션이 2개 이상이면 각 옵션의 옵션값을 입력해주세요.');
+        return;
+      }
+      if (new Set(optionValues).size !== optionValues.length) {
+        toast.error('옵션값이 서로 중복됩니다. 다른 값으로 입력해주세요.');
+        return;
+      }
+    }
     createMutation.mutate(
       {
         data: {
