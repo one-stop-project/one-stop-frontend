@@ -7,6 +7,14 @@ import {
 } from '@/types/common';
 
 // 백엔드 이미지 관련 응답 (실제 DTO에 맞춤)
+// 이미지 한 장의 식별자·주소·대표여부 (개별 삭제/대표변경에 imageId 사용)
+export interface ProductImageResponse {
+  imageId: number;
+  imageUrl: string;
+  displayOrder: number;
+  thumbnail: boolean;
+}
+
 export interface ProductImageAddResponse {
   addedImageCount: number;
   totalImageCount: number;
@@ -123,6 +131,9 @@ export interface ProductDetailResponse {
   optionNames: string[];
   items: ProductItemResponse[];
   imageUrls: string[];
+  // 이미지별 id·대표여부 포함(개별 삭제/대표변경용). imageUrls와 병행 제공.
+  // 구버전 배포 응답엔 없을 수 있어 optional로 둔다.
+  images?: ProductImageResponse[];
   categoryNames: string[];
   tags: string[];
 }

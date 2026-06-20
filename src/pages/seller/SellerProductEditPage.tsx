@@ -1,11 +1,13 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X, ImagePlus } from 'lucide-react';
+import { X, ImagePlus, Star, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   useSellerProductDetailQuery,
   useUpdateProductMutation,
   useAddProductImageMutation,
+  useDeleteProductImageMutation,
+  useSetThumbnailMutation,
 } from '@/hooks/queries/useSellerQuery';
 import { useCategoriesQuery } from '@/hooks/queries/useProductQuery';
 import { PageSpinner } from '@/components/common/Spinner';
@@ -25,6 +27,8 @@ export default function SellerProductEditPage() {
   const { data: categories } = useCategoriesQuery();
   const updateMutation = useUpdateProductMutation();
   const addImageMutation = useAddProductImageMutation();
+  const deleteImageMutation = useDeleteProductImageMutation();
+  const setThumbnailMutation = useSetThumbnailMutation();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -76,6 +80,25 @@ export default function SellerProductEditPage() {
       { productId, images: newImages },
       { onSuccess: () => setNewImages([]) }
     );
+  };
+
+  // 백엔드가 imageId를 주므로 기존 이미지를 개별 식별해 삭제/대표변경할 수 있다.
+  const existingImages = product.images ?? [];
+
+  const handleDeleteImage = (imageId: number) => {
+    if (!productId) return;
+    // 상품엔 이미지가 최소 1장 필요 — 마지막 1장 삭제는 막는다.
+    if (existingImages.length <= 1) {
+      toast.error('이미지는 최소 1장이 필요합니다.');
+      return;
+    }
+    if (!window.confirm('이 이미지를 삭제할까요?')) return;
+    deleteImageMutation.mutate({ productId, imageId });
+  };
+
+  const handleSetThumbnail = (imageId: number) => {
+    if (!productId) return;
+    setThumbnailMutation.mutate({ productId, imageId });
   };
 
   const handleSave = (e: FormEvent) => {
@@ -160,21 +183,74 @@ export default function SellerProductEditPage() {
         <section className="card p-6 space-y-4">
           <h2 className="text-lg font-semibold">상품 이미지</h2>
 
-          {/* 기존 이미지 (보기 전용 — 상세 응답이 이미지 id를 안 줘서 개별 삭제/대표변경 불가) */}
-          {product.imageUrls.length > 0 && (
+          {/* 기존 이미지 — 백엔드가 imageId를 주므로 개별 삭제·대표 변경 가능 */}
+          {existingImages.length > 0 ? (
             <div>
-              <p className="text-xs text-gray-500 mb-2">현재 이미지</p>
+              <p className="text-xs text-gray-500 mb-2">
+                현재 이미지 <span className="text-gray-400">(별표 = 대표 이미지)</span>
+              </p>
               <div className="flex flex-wrap gap-3">
-                {product.imageUrls.map((url, idx) => (
-                  <img
-                    key={idx}
-                    src={url}
-                    alt={`상품 이미지 ${idx + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                  />
+                {existingImages.map((img) => (
+                  <div key={img.imageId} className="relative w-24 h-24">
+                    <img
+                      src={img.imageUrl}
+                      alt="상품 이미지"
+                      className={`w-24 h-24 object-cover rounded-lg border ${
+                        img.thumbnail
+                          ? 'border-primary-500 ring-2 ring-primary-200'
+                          : 'border-gray-200'
+                      }`}
+                    />
+                    {img.thumbnail && (
+                      <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-primary-600 text-white text-[10px] rounded">
+                        대표
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteImage(img.imageId)}
+                      disabled={deleteImageMutation.isPending}
+                      title="이미지 삭제"
+                      className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-black/50 text-white rounded-full hover:bg-black/70 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    {!img.thumbnail && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetThumbnail(img.imageId)}
+                        disabled={setThumbnailMutation.isPending}
+                        className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-0.5 py-0.5 bg-white/85 text-gray-700 text-[10px] rounded hover:bg-white disabled:opacity-50"
+                      >
+                        <Star size={10} /> 대표로
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
+              {existingImages.length <= 1 && (
+                <p className="text-xs text-gray-400 mt-2">
+                  이미지는 최소 1장이 필요해 마지막 1장은 삭제할 수 없습니다.
+                </p>
+              )}
             </div>
+          ) : (
+            // 구버전 응답(이미지 id 없음) 대비 — 보기 전용 표시
+            product.imageUrls.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 mb-2">현재 이미지</p>
+                <div className="flex flex-wrap gap-3">
+                  {product.imageUrls.map((url, idx) => (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`상품 이미지 ${idx + 1}`}
+                      className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                    />
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {/* 이미지 추가 */}
