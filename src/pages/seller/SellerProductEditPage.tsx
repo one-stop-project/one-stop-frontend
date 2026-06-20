@@ -131,6 +131,19 @@ export default function SellerProductEditPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">상품 수정</h1>
 
+      {/* 반려된 상품이면 관리자 반려 사유를 보여준다 (백엔드는 REJECTED일 때만 사유를 채움) */}
+      {product.status === 'REJECTED' && (
+        <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50">
+          <p className="text-sm font-semibold text-red-700">
+            이 상품은 관리자 검수에서 반려되었습니다.
+          </p>
+          <p className="text-sm text-red-600 mt-1">
+            반려 사유:{' '}
+            {product.rejectReason?.trim() ? product.rejectReason : '사유가 기재되지 않았습니다.'}
+          </p>
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="space-y-6">
         {/* 기본 정보 */}
         <section className="card p-6 space-y-4">
