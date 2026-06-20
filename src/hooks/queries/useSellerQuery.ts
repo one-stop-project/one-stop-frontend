@@ -83,6 +83,38 @@ export function useAddProductImageMutation() {
   });
 }
 
+export function useDeleteProductImageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, imageId }: { productId: number; imageId: number }) =>
+      sellerApi.deleteProductImage(productId, imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('이미지가 삭제되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '이미지 삭제에 실패했습니다.');
+    },
+  });
+}
+
+export function useSetThumbnailMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, imageId }: { productId: number; imageId: number }) =>
+      sellerApi.setThumbnail(productId, imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('대표 이미지가 변경되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '대표 이미지 변경에 실패했습니다.');
+    },
+  });
+}
+
 export function useDeleteProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({
