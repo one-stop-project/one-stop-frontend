@@ -11,7 +11,17 @@ const PHONE_RE = /^010-\d{4}-\d{4}$/;
 // @ 앞뒤로 문자가 있고 도메인에 점(.)이 있는 일반적인 이메일 형식
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type FieldKey = 'email' | 'password' | 'passwordConfirm' | 'phone';
+type FieldKey =
+  | 'email'
+  | 'password'
+  | 'passwordConfirm'
+  | 'name'
+  | 'phone'
+  | 'address'
+  | 'shopName'
+  | 'businessNumber'
+  | 'bankName'
+  | 'bankAccount';
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export default function SignupPage() {
@@ -57,6 +67,28 @@ export default function SignupPage() {
     }
     if (!PHONE_RE.test(form.phone)) {
       next.phone = '전화번호 형식이 올바르지 않습니다. 예: 010-1234-5678';
+    }
+    if (!form.name.trim()) {
+      next.name = '이름을 입력해주세요.';
+    }
+    if (!form.address.trim()) {
+      next.address = '주소를 입력해주세요.';
+    }
+    // 판매자는 상호명·사업자등록번호와 정산 계좌(은행명·계좌번호)가 모두 필수.
+    // 비워서 보내면 백엔드가 가입을 거부(SELLER_012)하므로 제출 전에 막는다.
+    if (userType === 'SELLER') {
+      if (!form.shopName.trim()) {
+        next.shopName = '상호명을 입력해주세요.';
+      }
+      if (!form.businessNumber.trim()) {
+        next.businessNumber = '사업자등록번호를 입력해주세요.';
+      }
+      if (!form.bankName.trim()) {
+        next.bankName = '은행명을 입력해주세요.';
+      }
+      if (!form.bankAccount.trim()) {
+        next.bankAccount = '계좌번호를 입력해주세요.';
+      }
     }
 
     setErrors(next);
@@ -155,7 +187,7 @@ export default function SignupPage() {
               </FormField>
             </div>
 
-            <FormField label="이름" required>
+            <FormField label="이름" required error={errors.name}>
               <input
                 type="text"
                 className="input-field"
@@ -176,7 +208,7 @@ export default function SignupPage() {
               />
             </FormField>
 
-            <FormField label="주소" required>
+            <FormField label="주소" required error={errors.address}>
               <input
                 type="text"
                 className="input-field"
@@ -202,7 +234,7 @@ export default function SignupPage() {
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-slide-up">
                 <p className="text-sm font-medium text-gray-700">판매자 추가 정보</p>
 
-                <FormField label="상호명" required>
+                <FormField label="상호명" required error={errors.shopName}>
                   <input
                     type="text"
                     className="input-field"
@@ -212,7 +244,7 @@ export default function SignupPage() {
                   />
                 </FormField>
 
-                <FormField label="사업자등록번호" required>
+                <FormField label="사업자등록번호" required error={errors.businessNumber}>
                   <input
                     type="text"
                     className="input-field"
@@ -225,7 +257,7 @@ export default function SignupPage() {
 
                 {/* 정산 계좌 — 은행명과 계좌번호를 분리 입력 */}
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="은행명" required>
+                  <FormField label="은행명" required error={errors.bankName}>
                     <input
                       type="text"
                       className="input-field"
@@ -236,7 +268,7 @@ export default function SignupPage() {
                     />
                   </FormField>
 
-                  <FormField label="계좌번호" required>
+                  <FormField label="계좌번호" required error={errors.bankAccount}>
                     <input
                       type="text"
                       className="input-field"
