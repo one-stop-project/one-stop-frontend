@@ -136,6 +136,8 @@ export interface ProductDetailResponse {
   images?: ProductImageResponse[];
   categoryNames: string[];
   tags: string[];
+  // 관리자 반려 사유 — 상태가 REJECTED일 때만 채워지고 그 외에는 null
+  rejectReason?: string | null;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
