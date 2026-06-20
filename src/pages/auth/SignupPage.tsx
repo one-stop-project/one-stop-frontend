@@ -8,8 +8,8 @@ type UserType = 'BUYER' | 'SELLER';
 // 백엔드 검증 규칙과 동일하게 맞춤 (SignUpRequest)
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
 const PHONE_RE = /^010-\d{4}-\d{4}$/;
-// @ 앞뒤로 문자가 있고 도메인에 점(.)이 있는 일반적인 이메일 형식
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// 백엔드 SignUpRequest 이메일 패턴과 동일 (최상위 도메인은 영문 2자 이상)
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 type FieldKey =
   | 'email'
