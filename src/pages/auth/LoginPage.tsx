@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import { Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import { useLoginMutation } from '@/hooks/queries/useAuthQuery';
 
+// 카카오 로그인 진입 주소.
+// 백엔드 OAuth2 인가 엔드포인트는 API와 같은 서버의 루트(/oauth2/...)에 있다.
+// VITE_API_BASE_URL이 절대주소(https://host/api)면 '/api'를 떼어 백엔드 오리진으로 붙이고,
+// 개발처럼 상대('/api')면 빈 문자열 → 상대경로로 두어 vite 프록시가 백엔드로 넘긴다.
+const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+const oauthBase = /^https?:\/\//.test(apiBase) ? apiBase.replace(/\/api\/?$/, '') : '';
+const KAKAO_LOGIN_URL = `${oauthBase}/oauth2/authorization/kakao`;
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,7 +103,7 @@ export default function LoginPage() {
             </div>
 
             <a
-              href="/oauth2/authorization/kakao"
+              href={KAKAO_LOGIN_URL}
               className="mt-4 w-full flex items-center justify-center gap-2 py-3 bg-[#FEE500] text-[#3C1E1E] rounded-lg font-medium hover:bg-[#FFD700] transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
