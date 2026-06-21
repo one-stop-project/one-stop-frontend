@@ -180,7 +180,8 @@ export default function OrderDetailPage() {
             onClick={() => {
               if (confirm('정말 취소하시겠습니까?')) cancelMutation.mutate(order.orderId);
             }}
-            className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium"
+            disabled={cancelMutation.isPending}
+            className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             주문 취소
           </button>

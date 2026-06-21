@@ -90,7 +90,8 @@ export default function AdminProductsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => approveMutation.mutate(p.productId)}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                          disabled={approveMutation.isPending && approveMutation.variables === p.productId}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                           title="승인"
                         >
                           <Check size={16} />
