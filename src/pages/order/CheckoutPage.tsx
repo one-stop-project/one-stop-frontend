@@ -109,24 +109,18 @@ export default function CheckoutPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    createOrder.mutate(
-      {
-        orderType: isCart ? 'CART' : 'DIRECT',
-        items: isCart ? undefined : items,
-        cartItemIds: isCart ? cartItemIds : undefined,
-        receiverName: form.receiverName,
-        receiverPhone: form.receiverPhone,
-        receiverAddress: form.receiverAddress,
-        deliveryMessage: form.deliveryMessage || undefined,
-        usedPoint: usedPoint > 0 ? usedPoint : undefined,
-        userCouponId: selectedCouponId ?? undefined,
-      },
-      {
-        onError: () => {
-          alert('주문 생성에 실패했습니다. 입력 정보를 확인해주세요.');
-        },
-      }
-    );
+    // 실패 안내는 전역 인터셉터가 백엔드 메시지로 처리한다(별도 alert로 중복 안내하지 않음).
+    createOrder.mutate({
+      orderType: isCart ? 'CART' : 'DIRECT',
+      items: isCart ? undefined : items,
+      cartItemIds: isCart ? cartItemIds : undefined,
+      receiverName: form.receiverName,
+      receiverPhone: form.receiverPhone,
+      receiverAddress: form.receiverAddress,
+      deliveryMessage: form.deliveryMessage || undefined,
+      usedPoint: usedPoint > 0 ? usedPoint : undefined,
+      userCouponId: selectedCouponId ?? undefined,
+    });
   };
 
   return (
