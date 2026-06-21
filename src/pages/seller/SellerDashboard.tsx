@@ -9,18 +9,34 @@ import {
 } from '@/hooks/queries/useSellerQuery';
 
 export default function SellerDashboard() {
-  const { data: products } = useSellerProductsQuery(0, 5);
-  const { data: orders } = useSellerOrdersQuery(0, 5);
-  // 주문 상태별 건수는 전용 집계 API로 받는다(예전엔 목록을 size=1로 불러 totalElements만 쓰는 우회였음).
-  const { data: counts } = useSellerOrderCountsQuery();
-  // 판매자 본인 계정 상태 — 반려/정지면 상단에 사유를 안내한다.
+  // 판매자 본인 계정 상태 — 승인 전(대기/반려/정지)에는 매출·주문 등 데이터 조회 권한이 없어 403이 난다.
   const { data: myStatus } = useSellerMyStatusQuery();
+  const approved = myStatus?.sellerStatus === 'APPROVED';
+
+  // 승인된 판매자일 때만 대시보드 데이터를 조회한다(미승인 상태에서 권한없음 호출이 한꺼번에 터지는 것을 막는다).
+  const { data: products } = useSellerProductsQuery(0, 5, approved);
+  const { data: orders } = useSellerOrdersQuery(0, 5, undefined, approved);
+  // 주문 상태별 건수는 전용 집계 API로 받는다(예전엔 목록을 size=1로 불러 totalElements만 쓰는 우회였음).
+  const { data: counts } = useSellerOrderCountsQuery(approved);
   // 상품별 매출(배송완료 기준) 상위 5개
-  const { data: sales } = useSellerProductSalesQuery({ size: 5 });
+  const { data: sales } = useSellerProductSalesQuery({ size: 5 }, approved);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">판매자 대시보드</h1>
+
+      {/* 승인 대기 안내 */}
+      {myStatus && myStatus.sellerStatus === 'PENDING' && (
+        <div className="mb-6 p-4 rounded-lg border border-blue-200 bg-blue-50 flex gap-3">
+          <AlertTriangle size={20} className="shrink-0 mt-0.5 text-blue-600" />
+          <div>
+            <p className="text-sm font-semibold text-blue-700">판매자 승인 대기 중입니다.</p>
+            <p className="text-sm mt-1 text-blue-600">
+              승인이 완료되면 상품 등록·주문 관리·매출 통계를 이용할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 계정이 반려/정지 상태면 사유 안내 */}
       {myStatus &&

@@ -26,17 +26,24 @@ export function useSellerProductDetailQuery(productId: number | null, enabled = 
   });
 }
 
-export function useSellerProductsQuery(page = 0, size = 20) {
+export function useSellerProductsQuery(page = 0, size = 20, enabled = true) {
   return useQuery({
     queryKey: ['seller', 'products', page, size],
     queryFn: () => sellerApi.getMyProducts(page, size),
+    enabled,
   });
 }
 
-export function useSellerOrdersQuery(page = 0, size = 20, status?: OrderItemStatus) {
+export function useSellerOrdersQuery(
+  page = 0,
+  size = 20,
+  status?: OrderItemStatus,
+  enabled = true
+) {
   return useQuery({
     queryKey: ['seller', 'orders', page, size, status],
     queryFn: () => sellerApi.getMyOrders(page, size, status),
+    enabled,
   });
 }
 
@@ -50,40 +57,45 @@ export function useSellerMyStatusQuery() {
 }
 
 // 대시보드 — 주문상품 상태별 건수
-export function useSellerOrderCountsQuery() {
+export function useSellerOrderCountsQuery(enabled = true) {
   return useQuery({
     queryKey: ['seller', 'order-counts'],
     queryFn: () => sellerApi.getOrderStatusCounts(),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
 // 대시보드 — 상품별 매출 집계
 export function useSellerProductSalesQuery(
-  params: { from?: string; to?: string; page?: number; size?: number } = {}
+  params: { from?: string; to?: string; page?: number; size?: number } = {},
+  enabled = true
 ) {
   return useQuery({
     queryKey: ['seller', 'product-sales', params],
     queryFn: () => sellerApi.getProductSalesStats(params),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
 // 리뷰 — 내 상품에 달린 전체 리뷰 목록
-export function useSellerReviewsQuery(page = 0, size = 20) {
+export function useSellerReviewsQuery(page = 0, size = 20, enabled = true) {
   return useQuery({
     queryKey: ['seller', 'reviews', page, size],
     queryFn: () => sellerApi.getSellerReviews({ page, size }),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
 // 리뷰 — 평점 요약
-export function useSellerReviewSummaryQuery() {
+export function useSellerReviewSummaryQuery(enabled = true) {
   return useQuery({
     queryKey: ['seller', 'review-summary'],
     queryFn: () => sellerApi.getSellerReviewSummary(),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
