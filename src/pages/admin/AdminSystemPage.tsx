@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldAlert, Coins, AlertTriangle, CheckCircle2, PlayCircle } from 'lucide-react';
+import { ShieldAlert, Coins, AlertTriangle, CheckCircle2, PlayCircle, Activity } from 'lucide-react';
 import {
   usePointStatsQuery,
   usePointInconsistenciesQuery,
@@ -46,6 +46,38 @@ export default function AdminSystemPage() {
       <p className="text-sm text-gray-600 mb-6">
         포인트 회계 정합성과 보안 감사 로그를 점검합니다. 최고관리자(SUPER_ADMIN) 전용입니다.
       </p>
+
+      {/* ── 서버 모니터링 ── */}
+      <section className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity size={18} className="text-blue-600" />
+          <h2 className="font-semibold text-gray-900">서버 모니터링 (JVM)</h2>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Main</p>
+            <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
+              <iframe
+                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&from=now-1h&to=now&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-main&var-instance=10.0.18.198:8081&refresh=30s"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+              />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Dummy</p>
+            <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
+              <iframe
+                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&from=now-1h&to=now&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-dummy&var-instance=10.0.22.194:8081&refresh=30s"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── 포인트 회계 점검 ── */}
       <section className="mb-10">
