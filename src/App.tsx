@@ -64,10 +64,12 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             // 권한없음·잘못된 요청(4xx)은 재시도해도 동일하게 실패하므로 즉시 중단(불필요한 재요청·중복 알림 방지).
-            // 일시적 서버 오류(5xx)만 1회 재시도한다.
+            // 일시적 서버 오류(5xx)와 응답이 없는 네트워크/타임아웃 오류만 1회 재시도한다.
             retry: (failureCount, error) => {
                 const status = (error as { response?: { status?: number } })?.response?.status;
-                return typeof status === 'number' && status >= 500 && failureCount < 1;
+                // 응답 자체가 없는 경우(네트워크 끊김·타임아웃 등)는 일시적일 수 있으므로 1회 재시도.
+                if (typeof status !== 'number') return failureCount < 1;
+                return status >= 500 && failureCount < 1;
             },
             refetchOnWindowFocus: false,
             staleTime: 30 * 1000,
