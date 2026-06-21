@@ -58,6 +58,17 @@ export function useSellerOrderCountsQuery() {
   });
 }
 
+// 대시보드 — 상품별 매출 집계
+export function useSellerProductSalesQuery(
+  params: { from?: string; to?: string; page?: number; size?: number } = {}
+) {
+  return useQuery({
+    queryKey: ['seller', 'product-sales', params],
+    queryFn: () => sellerApi.getProductSalesStats(params),
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({

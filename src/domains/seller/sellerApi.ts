@@ -186,6 +186,27 @@ export interface SellerOrderStatusCountResponse {
   total: number;
 }
 
+// 백엔드 global PageResponse(신규 응답 틀)와 1:1.
+// 기존 PageResponse(number/first/last, Spring Page 원형)와 필드가 달라 별도 타입으로 둔다.
+export interface SellerPageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+// 백엔드 SellerProductSalesStatResponse 와 1:1 — 상품별 매출 집계(배송완료 기준)
+// grossSalesAmount 는 할인 전 금액
+export interface SellerProductSalesStatResponse {
+  productId: number;
+  productName: string;
+  thumbnailUrl: string | null;
+  salesQuantity: number;
+  grossSalesAmount: number;
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  API
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -259,6 +280,23 @@ export const sellerApi = {
     const res = await apiClient.get<ApiResponse<SellerOrderStatusCountResponse>>(
       '/seller/dashboard/order-counts'
     );
+    return res.data.data;
+  },
+
+  // 대시보드 — 상품별 매출 집계 (배송완료 기준, from·to 미지정 시 백엔드 기본 기간)
+  getProductSalesStats: async (
+    params: { from?: string; to?: string; page?: number; size?: number } = {}
+  ): Promise<SellerPageResponse<SellerProductSalesStatResponse>> => {
+    const res = await apiClient.get<
+      ApiResponse<SellerPageResponse<SellerProductSalesStatResponse>>
+    >('/seller/dashboard/product-sales', {
+      params: {
+        from: params.from,
+        to: params.to,
+        page: params.page ?? 0,
+        size: params.size ?? 10,
+      },
+    });
     return res.data.data;
   },
 

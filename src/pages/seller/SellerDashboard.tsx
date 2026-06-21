@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Truck, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Package, ShoppingBag, Truck, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react';
 import {
   useSellerProductsQuery,
   useSellerOrdersQuery,
   useSellerMyStatusQuery,
   useSellerOrderCountsQuery,
+  useSellerProductSalesQuery,
 } from '@/hooks/queries/useSellerQuery';
 
 export default function SellerDashboard() {
@@ -14,6 +15,8 @@ export default function SellerDashboard() {
   const { data: counts } = useSellerOrderCountsQuery();
   // 판매자 본인 계정 상태 — 반려/정지면 상단에 사유를 안내한다.
   const { data: myStatus } = useSellerMyStatusQuery();
+  // 상품별 매출(배송완료 기준) 상위 5개
+  const { data: sales } = useSellerProductSalesQuery({ size: 5 });
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -90,6 +93,54 @@ export default function SellerDashboard() {
           link="/seller/orders"
         />
       </div>
+
+      <section className="card p-6 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp size={18} className="text-primary-600" />
+          <h2 className="text-lg font-semibold">상품별 매출</h2>
+          <span className="text-xs text-gray-400">배송 완료 기준</span>
+        </div>
+        {sales && sales.content.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="py-2 font-medium">상품</th>
+                  <th className="py-2 font-medium text-right">판매 수량</th>
+                  <th className="py-2 font-medium text-right">매출액</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sales.content.map((s) => (
+                  <tr key={s.productId} className="border-b last:border-0">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        {s.thumbnailUrl ? (
+                          <img
+                            src={s.thumbnailUrl}
+                            alt={s.productName}
+                            onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                            className="w-10 h-10 rounded object-cover shrink-0 bg-gray-100"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-100 rounded shrink-0" />
+                        )}
+                        <span className="font-medium truncate max-w-[18rem]">{s.productName}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-right">{s.salesQuantity.toLocaleString()}개</td>
+                    <td className="py-3 text-right font-semibold">
+                      {s.grossSalesAmount.toLocaleString()}원
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 py-6 text-center">판매 완료된 상품이 아직 없습니다.</p>
+        )}
+      </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <section className="card p-6">
