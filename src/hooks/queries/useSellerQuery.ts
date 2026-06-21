@@ -226,6 +226,8 @@ export function useConfirmOrderMutation() {
     mutationFn: (orderItemId: number) => sellerApi.confirmOrder(orderItemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
+      // 주문 확인으로 상태별 건수가 바뀌므로 대시보드 카운트도 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller', 'order-counts'] });
       toast.success('주문이 확인되었습니다.');
     },
   });
@@ -257,6 +259,8 @@ export function useRejectOrderMutation() {
       sellerApi.rejectOrder(orderItemId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
+      // 주문 거절로 상태별 건수가 바뀌므로 대시보드 카운트도 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller', 'order-counts'] });
       toast.success('주문을 거절했습니다.');
     },
   });
