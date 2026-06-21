@@ -49,6 +49,15 @@ export function useSellerMyStatusQuery() {
   });
 }
 
+// 대시보드 — 주문상품 상태별 건수
+export function useSellerOrderCountsQuery() {
+  return useQuery({
+    queryKey: ['seller', 'order-counts'],
+    queryFn: () => sellerApi.getOrderStatusCounts(),
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({

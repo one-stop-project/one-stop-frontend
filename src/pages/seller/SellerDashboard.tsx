@@ -4,15 +4,14 @@ import {
   useSellerProductsQuery,
   useSellerOrdersQuery,
   useSellerMyStatusQuery,
+  useSellerOrderCountsQuery,
 } from '@/hooks/queries/useSellerQuery';
 
 export default function SellerDashboard() {
   const { data: products } = useSellerProductsQuery(0, 5);
   const { data: orders } = useSellerOrdersQuery(0, 5);
-  // 매출 집계 API가 없어 가짜 '-' 매출 카드 대신, 상태별 건수만 실제 값으로 표시한다.
-  // size=1로 목록은 받지 않고 totalElements(전체 건수)만 사용한다.
-  const { data: shipping } = useSellerOrdersQuery(0, 1, 'SHIPPING');
-  const { data: delivered } = useSellerOrdersQuery(0, 1, 'DELIVERED');
+  // 주문 상태별 건수는 전용 집계 API로 받는다(예전엔 목록을 size=1로 불러 totalElements만 쓰는 우회였음).
+  const { data: counts } = useSellerOrderCountsQuery();
   // 판매자 본인 계정 상태 — 반려/정지면 상단에 사유를 안내한다.
   const { data: myStatus } = useSellerMyStatusQuery();
 
@@ -75,19 +74,19 @@ export default function SellerDashboard() {
         <StatCard
           icon={<ShoppingBag className="text-green-600" />}
           label="전체 주문"
-          value={orders?.totalElements ?? 0}
+          value={counts?.total ?? 0}
           link="/seller/orders"
         />
         <StatCard
           icon={<Truck className="text-orange-600" />}
           label="배송 중"
-          value={shipping?.totalElements ?? 0}
+          value={counts?.shipping ?? 0}
           link="/seller/orders"
         />
         <StatCard
           icon={<CheckCircle2 className="text-purple-600" />}
           label="배송 완료"
-          value={delivered?.totalElements ?? 0}
+          value={counts?.delivered ?? 0}
           link="/seller/orders"
         />
       </div>
