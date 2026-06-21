@@ -39,7 +39,9 @@ export default function CartPage() {
 
   // ★ 백엔드는 content 배열, 기준값은 itemId
   const items = cart?.content ?? [];
-  const allSelected = items.length > 0 && selectedIds.size === items.length;
+  // 선택 집합엔 삭제된 상품의 itemId가 남을 수 있어, 화면 표시(전체선택·카운터)는 항상 현재 목록과의 교집합으로 계산한다.
+  const selectedItems = items.filter((i) => selectedIds.has(i.itemId));
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
 
   const toggleAll = () => {
     if (allSelected) setSelectedIds(new Set());
@@ -53,7 +55,6 @@ export default function CartPage() {
     setSelectedIds(next);
   };
 
-  const selectedItems = items.filter((i) => selectedIds.has(i.itemId));
   // subtotal은 price × quantity로 계산 (백엔드에 subtotal 필드 없음)
   const subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
   // 선택 상품이 없으면 0, 있으면 기본 배송비(구독 무료배송은 결제 단계에서 확정)
@@ -114,7 +115,7 @@ export default function CartPage() {
                 className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
               />
               <span className="text-sm font-medium">
-                전체 선택 ({selectedIds.size}/{items.length})
+                전체 선택 ({selectedItems.length}/{items.length})
               </span>
             </label>
           </div>
