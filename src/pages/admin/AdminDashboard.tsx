@@ -2,6 +2,7 @@ import { ShoppingBag, TrendingUp, Package, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDashboardQuery } from '@/hooks/queries/useAdminQuery';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
 import { OrderStatus, DeliveryStatus } from '@/types/common';
 
@@ -21,8 +22,15 @@ const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
 };
 
 export default function AdminDashboard() {
-  const { data, isLoading } = useDashboardQuery();
+  const { data, isLoading, isError } = useDashboardQuery();
 
+  if (isError) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <EmptyState title="대시보드를 불러오지 못했습니다" description="잠시 후 다시 시도해주세요." />
+      </div>
+    );
+  }
   if (isLoading || !data) return <PageSpinner />;
 
   const { orders, deliveries } = data;

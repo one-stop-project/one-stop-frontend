@@ -8,16 +8,24 @@ import {
   useCancelSubscriptionMutation,
 } from '@/hooks/queries/useSubscriptionQuery';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatPhone, formatDate } from '@/utils/format';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export default function MyPage() {
-  const { data: me, isLoading } = useMyInfoQuery();
+  const { data: me, isLoading, isError } = useMyInfoQuery();
   const updateMutation = useUpdateMyInfoMutation();
   const isBuyer = useAuthStore((s) => s.hasRole)('BUYER'); // 주문·리뷰·포인트·구독은 구매자 전용
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '' });
 
+  if (isError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState title="내 정보를 불러오지 못했습니다" description="잠시 후 다시 시도해주세요." />
+      </div>
+    );
+  }
   if (isLoading || !me) return <PageSpinner />;
 
   const startEditing = () => {
