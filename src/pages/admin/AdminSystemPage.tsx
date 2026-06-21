@@ -58,7 +58,7 @@ export default function AdminSystemPage() {
             <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Main</p>
             <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
               <iframe
-                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&from=now-1h&to=now&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-main&var-instance=10.0.18.198:8081&refresh=30s"
+                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-main&var-instance=10.0.18.198%3A8081&refresh=30s"
                 width="100%"
                 height="100%"
                 frameBorder="0"
@@ -69,7 +69,7 @@ export default function AdminSystemPage() {
             <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Dummy</p>
             <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
               <iframe
-                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&from=now-1h&to=now&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-dummy&var-instance=10.0.22.194:8081&refresh=30s"
+                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-dummy&var-instance=10.0.22.194%3A8081&refresh=30s"
                 width="100%"
                 height="100%"
                 frameBorder="0"
