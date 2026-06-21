@@ -207,6 +207,31 @@ export interface SellerProductSalesStatResponse {
   grossSalesAmount: number;
 }
 
+// 백엔드 SellerReviewResponse 와 1:1 — 판매자 상품에 달린 구매자 리뷰
+export interface SellerReviewResponse {
+  reviewId: number;
+  productId: number;
+  productName: string;
+  thumbnailUrl: string | null;
+  orderItemId: number;
+  buyerName: string; // 작성자(계정) 이름, 마스킹됨
+  rating: number; // 1~5
+  content: string;
+  imageCount: number;
+  createdAt: string;
+}
+
+// 백엔드 SellerReviewSummaryResponse 와 1:1 — 리뷰 수·평균 평점·평점별 분포
+export interface SellerReviewSummaryResponse {
+  reviewCount: number;
+  averageRating: number;
+  rating5Count: number;
+  rating4Count: number;
+  rating3Count: number;
+  rating2Count: number;
+  rating1Count: number;
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  API
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -297,6 +322,25 @@ export const sellerApi = {
         size: params.size ?? 10,
       },
     });
+    return res.data.data;
+  },
+
+  // 리뷰 — 내 상품에 달린 전체 리뷰 목록
+  getSellerReviews: async (
+    params: { page?: number; size?: number } = {}
+  ): Promise<SellerPageResponse<SellerReviewResponse>> => {
+    const res = await apiClient.get<ApiResponse<SellerPageResponse<SellerReviewResponse>>>(
+      '/seller/reviews',
+      { params: { page: params.page ?? 0, size: params.size ?? 20 } }
+    );
+    return res.data.data;
+  },
+
+  // 리뷰 — 평점 요약(리뷰 수·평균·평점별 분포)
+  getSellerReviewSummary: async (): Promise<SellerReviewSummaryResponse> => {
+    const res = await apiClient.get<ApiResponse<SellerReviewSummaryResponse>>(
+      '/seller/reviews/summary'
+    );
     return res.data.data;
   },
 
