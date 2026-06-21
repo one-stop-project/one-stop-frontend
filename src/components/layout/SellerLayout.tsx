@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingBag, Boxes } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Boxes, Star } from 'lucide-react';
 import { DashboardLayout } from './DashboardLayout';
 
 export function SellerLayout() {
@@ -10,6 +10,7 @@ export function SellerLayout() {
         { to: '/seller/products', label: '상품 관리', icon: Package },
         { to: '/seller/inventory', label: '재고 관리', icon: Boxes },
         { to: '/seller/orders', label: '주문 관리', icon: ShoppingBag },
+        { to: '/seller/reviews', label: '리뷰 관리', icon: Star },
       ]}
     />
   );

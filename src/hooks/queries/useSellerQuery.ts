@@ -69,6 +69,24 @@ export function useSellerProductSalesQuery(
   });
 }
 
+// 리뷰 — 내 상품에 달린 전체 리뷰 목록
+export function useSellerReviewsQuery(page = 0, size = 20) {
+  return useQuery({
+    queryKey: ['seller', 'reviews', page, size],
+    queryFn: () => sellerApi.getSellerReviews({ page, size }),
+    staleTime: 30 * 1000,
+  });
+}
+
+// 리뷰 — 평점 요약
+export function useSellerReviewSummaryQuery() {
+  return useQuery({
+    queryKey: ['seller', 'review-summary'],
+    queryFn: () => sellerApi.getSellerReviewSummary(),
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({

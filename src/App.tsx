@@ -46,6 +46,7 @@ import SellerProductsNewPage from '@/pages/seller/SellerProductsNewPage';
 import SellerProductEditPage from '@/pages/seller/SellerProductEditPage';
 import SellerInventoryPage from '@/pages/seller/SellerInventoryPage';
 import SellerOrdersPage from '@/pages/seller/SellerOrdersPage';
+import SellerReviewsPage from '@/pages/seller/SellerReviewsPage';
 
 // Admin
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -118,6 +119,7 @@ export default function App() {
                                 <Route path="/seller/products/:id/edit" element={<SellerProductEditPage />} />
                                 <Route path="/seller/inventory" element={<SellerInventoryPage />} />
                                 <Route path="/seller/orders" element={<SellerOrdersPage />} />
+                                <Route path="/seller/reviews" element={<SellerReviewsPage />} />
                             </Route>
                         </Route>
 
