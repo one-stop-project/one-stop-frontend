@@ -175,6 +175,17 @@ export interface SellerMyStatusResponse {
   rejectedAt: string | null;
 }
 
+// 백엔드 SellerOrderStatusCountResponse 와 1:1 — 주문상품 상태별 건수
+export interface SellerOrderStatusCountResponse {
+  ordered: number;
+  confirmed: number;
+  shipping: number;
+  delivered: number;
+  cancelled: number;
+  rejected: number;
+  total: number;
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  API
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -240,6 +251,14 @@ export const sellerApi = {
   // 판매자 본인 계정 상태 + 반려/정지 사유 (반려·정지 시에만 사유·시각 채워짐)
   getMySellerStatus: async (): Promise<SellerMyStatusResponse> => {
     const res = await apiClient.get<ApiResponse<SellerMyStatusResponse>>('/seller/me/status');
+    return res.data.data;
+  },
+
+  // 대시보드 — 주문상품 상태별 건수
+  getOrderStatusCounts: async (): Promise<SellerOrderStatusCountResponse> => {
+    const res = await apiClient.get<ApiResponse<SellerOrderStatusCountResponse>>(
+      '/seller/dashboard/order-counts'
+    );
     return res.data.data;
   },
 
