@@ -131,11 +131,13 @@ apiClient.interceptors.response.use(
     const code = data?.code;
 
     // 특정 에러만 자동 토스트 (silent 옵션 지원)
+    // 여러 요청이 동시에 같은 에러로 실패해도 토스트 id가 같으면 하나로 합쳐져 알림이 겹쳐 쌓이지 않는다.
     if (!(originalRequest as any)?._silent) {
-      if (error.response?.status && error.response.status >= 500) {
-        toast.error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } else if (error.response?.status !== 401) {
-        toast.error(message);
+      const status = error.response?.status;
+      if (status && status >= 500) {
+        toast.error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', { id: 'api-5xx' });
+      } else if (status !== 401) {
+        toast.error(message, { id: `api-${status ?? 'err'}-${message}` });
       }
     }
 

@@ -63,7 +63,12 @@ import AdminSystemPage from '@/pages/admin/AdminSystemPage';
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            retry: 1,
+            // 권한없음·잘못된 요청(4xx)은 재시도해도 동일하게 실패하므로 즉시 중단(불필요한 재요청·중복 알림 방지).
+            // 일시적 서버 오류(5xx)만 1회 재시도한다.
+            retry: (failureCount, error) => {
+                const status = (error as { response?: { status?: number } })?.response?.status;
+                return typeof status === 'number' && status >= 500 && failureCount < 1;
+            },
             refetchOnWindowFocus: false,
             staleTime: 30 * 1000,
         },
