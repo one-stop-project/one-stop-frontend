@@ -3,6 +3,7 @@ import { Star, Image as ImageIcon } from 'lucide-react';
 import {
   useSellerReviewsQuery,
   useSellerReviewSummaryQuery,
+  useSellerMyStatusQuery,
 } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -11,8 +12,23 @@ import { formatDateTime } from '@/utils/format';
 
 export default function SellerReviewsPage() {
   const [page, setPage] = useState(0);
-  const { data: summary } = useSellerReviewSummaryQuery();
-  const { data, isLoading } = useSellerReviewsQuery(page, 20);
+  // 승인 전(대기/반려/정지) 판매자는 리뷰 조회 권한이 없어 403이 난다 — 승인된 경우에만 호출한다.
+  const { data: myStatus } = useSellerMyStatusQuery();
+  const approved = myStatus?.sellerStatus === 'APPROVED';
+  const { data: summary } = useSellerReviewSummaryQuery(approved);
+  const { data, isLoading } = useSellerReviewsQuery(page, 20, approved);
+
+  if (myStatus && !approved) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">리뷰 관리</h1>
+        <EmptyState
+          title="아직 이용할 수 없습니다"
+          description="판매자 승인이 완료되면 리뷰를 확인할 수 있습니다."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
