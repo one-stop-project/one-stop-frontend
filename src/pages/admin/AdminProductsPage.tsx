@@ -27,11 +27,18 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AdminProductsPage() {
   const [page, setPage] = useState(0);
 
-  const { data, isLoading } = useAdminProductsQuery(page, 20);
+  const { data, isLoading, isError } = useAdminProductsQuery(page, 20);
   const approveMutation = useApproveProductMutation();
   const rejectMutation = useRejectProductMutation();
 
   if (isLoading) return <PageSpinner />;
+  if (isError) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <EmptyState title="상품 목록을 불러오지 못했습니다" description="잠시 후 다시 시도해주세요." />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

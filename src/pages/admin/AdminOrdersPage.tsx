@@ -26,7 +26,7 @@ export default function AdminOrdersPage() {
   const [to, setTo] = useState('');
   const [filters, setFilters] = useState<AdminOrderFilters>({});
 
-  const { data, isLoading } = useAdminOrdersQuery(page, 20, filters);
+  const { data, isLoading, isError } = useAdminOrdersQuery(page, 20, filters);
 
   const applyFilters = (e: FormEvent) => {
     e.preventDefault();
@@ -83,6 +83,8 @@ export default function AdminOrdersPage() {
 
       {isLoading ? (
         <PageSpinner />
+      ) : isError ? (
+        <EmptyState title="주문 목록을 불러오지 못했습니다" description="잠시 후 다시 시도해주세요." />
       ) : data?.content.length === 0 ? (
         <EmptyState title="해당 조건의 주문이 없습니다" />
       ) : (
