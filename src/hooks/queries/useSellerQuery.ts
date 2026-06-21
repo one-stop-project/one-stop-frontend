@@ -40,6 +40,15 @@ export function useSellerOrdersQuery(page = 0, size = 20, status?: OrderItemStat
   });
 }
 
+// 판매자 본인 계정 상태 + 반려/정지 사유 (대시보드 상단 안내용)
+export function useSellerMyStatusQuery() {
+  return useQuery({
+    queryKey: ['seller', 'my-status'],
+    queryFn: () => sellerApi.getMySellerStatus(),
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({

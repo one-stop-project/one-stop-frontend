@@ -4,6 +4,7 @@ import {
   ProductItemStatus,
   OrderItemStatus,
   DeliveryStatus,
+  SellerStatus,
 } from '@/types/common';
 
 // 백엔드 이미지 관련 응답 (실제 DTO에 맞춤)
@@ -160,6 +161,21 @@ export interface SellerOrderItem {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  판매자 내 상태
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 백엔드 SellerMyStatusResponse 와 1:1 — 판매자 본인 계정 상태 + 반려/정지 사유
+// rejectReason·rejectedAt 은 반려/정지 이력이 있을 때만 채워지고 없으면 null
+export interface SellerMyStatusResponse {
+  sellerId: number;
+  shopName: string;
+  businessNumber: string;
+  sellerStatus: SellerStatus;
+  rejectReason: string | null;
+  rejectedAt: string | null;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  API
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -219,6 +235,12 @@ export const sellerApi = {
 
   deleteProduct: async (productId: number): Promise<void> => {
     await apiClient.delete(`/seller/products/${productId}`);
+  },
+
+  // 판매자 본인 계정 상태 + 반려/정지 사유 (반려·정지 시에만 사유·시각 채워짐)
+  getMySellerStatus: async (): Promise<SellerMyStatusResponse> => {
+    const res = await apiClient.get<ApiResponse<SellerMyStatusResponse>>('/seller/me/status');
+    return res.data.data;
   },
 
   // 재고 입고 (옵션 itemId 기준, reason 선택)

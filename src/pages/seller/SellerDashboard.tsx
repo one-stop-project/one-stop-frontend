@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Package, ShoppingBag, Truck, CheckCircle2 } from 'lucide-react';
-import { useSellerProductsQuery, useSellerOrdersQuery } from '@/hooks/queries/useSellerQuery';
+import { Package, ShoppingBag, Truck, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  useSellerProductsQuery,
+  useSellerOrdersQuery,
+  useSellerMyStatusQuery,
+} from '@/hooks/queries/useSellerQuery';
 
 export default function SellerDashboard() {
   const { data: products } = useSellerProductsQuery(0, 5);
@@ -9,10 +13,57 @@ export default function SellerDashboard() {
   // size=1로 목록은 받지 않고 totalElements(전체 건수)만 사용한다.
   const { data: shipping } = useSellerOrdersQuery(0, 1, 'SHIPPING');
   const { data: delivered } = useSellerOrdersQuery(0, 1, 'DELIVERED');
+  // 판매자 본인 계정 상태 — 반려/정지면 상단에 사유를 안내한다.
+  const { data: myStatus } = useSellerMyStatusQuery();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">판매자 대시보드</h1>
+
+      {/* 계정이 반려/정지 상태면 사유 안내 */}
+      {myStatus &&
+        (myStatus.sellerStatus === 'REJECTED' || myStatus.sellerStatus === 'SUSPENDED') && (
+          <div
+            className={`mb-6 p-4 rounded-lg border flex gap-3 ${
+              myStatus.sellerStatus === 'REJECTED'
+                ? 'border-red-200 bg-red-50'
+                : 'border-amber-200 bg-amber-50'
+            }`}
+          >
+            <AlertTriangle
+              size={20}
+              className={`shrink-0 mt-0.5 ${
+                myStatus.sellerStatus === 'REJECTED' ? 'text-red-600' : 'text-amber-600'
+              }`}
+            />
+            <div>
+              <p
+                className={`text-sm font-semibold ${
+                  myStatus.sellerStatus === 'REJECTED' ? 'text-red-700' : 'text-amber-700'
+                }`}
+              >
+                {myStatus.sellerStatus === 'REJECTED'
+                  ? '판매자 가입이 반려되었습니다.'
+                  : '판매자 활동이 정지되었습니다.'}
+              </p>
+              <p
+                className={`text-sm mt-1 ${
+                  myStatus.sellerStatus === 'REJECTED' ? 'text-red-600' : 'text-amber-700'
+                }`}
+              >
+                사유:{' '}
+                {myStatus.rejectReason?.trim()
+                  ? myStatus.rejectReason
+                  : '사유가 기재되지 않았습니다.'}
+              </p>
+              {myStatus.rejectedAt && (
+                <p className="text-xs text-gray-500 mt-1">
+                  처리일: {new Date(myStatus.rejectedAt).toLocaleDateString('ko-KR')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard
