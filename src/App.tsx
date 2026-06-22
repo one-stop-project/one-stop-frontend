@@ -59,6 +59,7 @@ import AdminSubscriptionsPage from '@/pages/admin/AdminSubscriptionsPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminAnalyticsPage from '@/pages/admin/AdminAnalyticsPage';
 import AdminSystemPage from '@/pages/admin/AdminSystemPage';
+import AdminSecurityAuditPage from '@/pages/admin/AdminSecurityAuditPage';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -146,6 +147,7 @@ export default function App() {
                                 <Route element={<ProtectedRoute roles="SUPER_ADMIN" />}>
                                     <Route path="/admin/users" element={<AdminUsersPage />} />
                                     <Route path="/admin/system" element={<AdminSystemPage />} />
+                                    <Route path="/admin/security-audit" element={<AdminSecurityAuditPage />} />
                                 </Route>
                             </Route>
                         </Route>
