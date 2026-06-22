@@ -57,6 +57,8 @@ export default function CartPage() {
 
   // subtotal은 price × quantity로 계산 (백엔드에 subtotal 필드 없음)
   const subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // 주문 버튼에 표시할 총 수량(상품 가짓수가 아니라 선택 상품들의 수량 합계)
+  const selectedQuantity = selectedItems.reduce((sum, i) => sum + i.quantity, 0);
   // 선택 상품이 없으면 0, 있으면 기본 배송비(구독 무료배송은 결제 단계에서 확정)
   const shippingFee = subtotal === 0 ? 0 : SHIPPING_FEE;
   const total = subtotal + shippingFee;
@@ -246,7 +248,7 @@ export default function CartPage() {
               disabled={selectedItems.length === 0}
               className="btn-primary w-full py-3 flex items-center justify-center gap-1"
             >
-              {selectedItems.length}개 주문하기
+              {selectedQuantity}개 주문하기
               <ChevronRight size={18} />
             </button>
           </div>
