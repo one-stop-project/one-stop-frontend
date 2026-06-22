@@ -3,8 +3,15 @@ import { TrendingUp } from 'lucide-react';
 import { ProductSummary } from '@/domains/product/productApi';
 import { formatPrice } from '@/utils/format';
 
+// 카드가 실제로 쓰는 필드만 요구 — 일반 목록(ProductSummary)과 인기상품(PopularProduct)
+// 둘 다 받을 수 있도록 공통 부분집합으로 좁힌다.
+type ProductCardItem = Pick<
+  ProductSummary,
+  'productId' | 'name' | 'thumbnailUrl' | 'minPrice' | 'salesCount'
+>;
+
 interface ProductCardProps {
-  product: ProductSummary;
+  product: ProductCardItem;
 }
 
 export function ProductCard({ product }: ProductCardProps) {

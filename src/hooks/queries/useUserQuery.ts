@@ -46,11 +46,15 @@ export function useChangePasswordMutation() {
 export function useWithdrawMutation() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: WithdrawRequest) => userApi.withdraw(data),
     onSuccess: () => {
       logout();
+      // 로그아웃과 동일하게 이전 사용자 캐시(내정보·주문·장바구니 등)를 비운다.
+      // 비우지 않으면 같은 브라우저에서 다른 계정으로 로그인했을 때 이전 사용자 데이터가 잠시 노출될 수 있다.
+      queryClient.clear();
       toast.success('탈퇴가 완료되었습니다.');
       navigate('/');
     },

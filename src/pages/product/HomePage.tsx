@@ -1,18 +1,23 @@
-import {ArrowRight, Sparkles} from 'lucide-react';
+import {ArrowRight, Sparkles, TrendingUp} from 'lucide-react';
 import {Link} from 'react-router-dom';
-import {usePopularProductsQuery, useProductListQuery} from '@/hooks/queries/useProductQuery';
+import {
+  usePopularProductsQuery,
+  useProductListQuery,
+  usePopularKeywordsQuery,
+} from '@/hooks/queries/useProductQuery';
 import {ProductCard, ProductCardSkeleton} from '@/components/product/ProductCard';
 
 export default function HomePage() {
   const { data: popular, isLoading: popularLoading } = usePopularProductsQuery(8);
+  const { data: keywords } = usePopularKeywordsQuery(10);
   const { data: latest, isLoading: latestLoading } = useProductListQuery({
     page: 0,
-    size: 8,
+    size: 10, // 백엔드 상품목록 size는 10~20만 허용 (8이면 400)
     sort: 'LATEST',
   });
 
-  // 응답이 깨져도 .map에서 안 터지도록 방어
-  const popularProducts = popular?.content ?? [];
+  // 인기상품은 배열 응답, 목록은 Page 응답
+  const popularProducts = popular ?? [];
   const latestProducts = latest?.content ?? [];
 
   return (
@@ -38,6 +43,28 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* 인기 검색어 */}
+      {keywords && keywords.length > 0 && (
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="text-primary-600" size={20} />
+            <h2 className="text-lg font-bold text-gray-900">인기 검색어</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {keywords.map((k) => (
+              <Link
+                key={k.keyword}
+                to={`/products?keyword=${encodeURIComponent(k.keyword)}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+              >
+                <span className="text-primary-600 font-semibold">{k.rank}</span>
+                {k.keyword}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 인기 상품 */}
       <section className="mb-12">

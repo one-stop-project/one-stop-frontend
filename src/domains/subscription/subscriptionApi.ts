@@ -32,7 +32,10 @@ export const subscriptionApi = {
 
   // 내 구독 조회
   getMySubscription: async (): Promise<Subscription> => {
-    const res = await apiClient.get<ApiResponse<Subscription>>('/subscriptions/me');
+    // 미구독 사용자는 백엔드가 404를 던짐 — 정상 상태이므로 공용 에러 토스트를 억제(_silent)
+    const res = await apiClient.get<ApiResponse<Subscription>>('/subscriptions/me', {
+      _silent: true,
+    } as never);
     return res.data.data;
   },
 

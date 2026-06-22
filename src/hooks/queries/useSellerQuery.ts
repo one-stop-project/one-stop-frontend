@@ -1,25 +1,109 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { sellerApi, ProductCreateRequest, ProductUpdateRequest } from '@/domains/seller/sellerApi';
+import {
+  sellerApi,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  ItemUpdateRequest,
+} from '@/domains/seller/sellerApi';
+import { DeliveryStatus, OrderItemStatus } from '@/types/common';
 
-export function useSellerProductsQuery(page = 0, size = 20) {
+export function usePopularTagsQuery(keyword: string, enabled: boolean) {
   return useQuery({
-    queryKey: ['seller', 'products', page, size],
-    queryFn: () => sellerApi.getMyProducts(page, size),
+    queryKey: ['seller', 'popular-tags', keyword],
+    queryFn: () => sellerApi.getPopularTags(keyword, 8),
+    enabled,
+    staleTime: 60 * 1000,
   });
 }
 
-export function useSellerOrdersQuery(page = 0, size = 20) {
+export function useSellerProductDetailQuery(productId: number | null, enabled = true) {
   return useQuery({
-    queryKey: ['seller', 'orders', page, size],
-    queryFn: () => sellerApi.getMyOrders(page, size),
+    queryKey: ['seller', 'product-detail', productId],
+    queryFn: () => sellerApi.getMyProductDetail(productId!),
+    enabled: enabled && productId !== null,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useSellerProductsQuery(page = 0, size = 20, enabled = true) {
+  return useQuery({
+    queryKey: ['seller', 'products', page, size],
+    queryFn: () => sellerApi.getMyProducts(page, size),
+    enabled,
+  });
+}
+
+export function useSellerOrdersQuery(
+  page = 0,
+  size = 20,
+  status?: OrderItemStatus,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ['seller', 'orders', page, size, status],
+    queryFn: () => sellerApi.getMyOrders(page, size, status),
+    enabled,
+  });
+}
+
+// 판매자 본인 계정 상태 + 반려/정지 사유 (대시보드 상단 안내용)
+export function useSellerMyStatusQuery() {
+  return useQuery({
+    queryKey: ['seller', 'my-status'],
+    queryFn: () => sellerApi.getMySellerStatus(),
+    staleTime: 60 * 1000,
+  });
+}
+
+// 대시보드 — 주문상품 상태별 건수
+export function useSellerOrderCountsQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['seller', 'order-counts'],
+    queryFn: () => sellerApi.getOrderStatusCounts(),
+    staleTime: 30 * 1000,
+    enabled,
+  });
+}
+
+// 대시보드 — 상품별 매출 집계
+export function useSellerProductSalesQuery(
+  params: { from?: string; to?: string; page?: number; size?: number } = {},
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ['seller', 'product-sales', params],
+    queryFn: () => sellerApi.getProductSalesStats(params),
+    staleTime: 30 * 1000,
+    enabled,
+  });
+}
+
+// 리뷰 — 내 상품에 달린 전체 리뷰 목록
+export function useSellerReviewsQuery(page = 0, size = 20, enabled = true) {
+  return useQuery({
+    queryKey: ['seller', 'reviews', page, size],
+    queryFn: () => sellerApi.getSellerReviews({ page, size }),
+    staleTime: 30 * 1000,
+    enabled,
+  });
+}
+
+// 리뷰 — 평점 요약
+export function useSellerReviewSummaryQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['seller', 'review-summary'],
+    queryFn: () => sellerApi.getSellerReviewSummary(),
+    staleTime: 30 * 1000,
+    enabled,
   });
 }
 
 export function useCreateProductMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: ProductCreateRequest) => sellerApi.createProduct(data),
+    mutationFn: ({ data, images }: { data: ProductCreateRequest; images: File[] }) =>
+      sellerApi.createProduct(data, images),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
       toast.success('상품이 등록되었습니다. 관리자 승인 후 노출됩니다.');
@@ -33,8 +117,59 @@ export function useUpdateProductMutation() {
     mutationFn: ({ productId, data }: { productId: number; data: ProductUpdateRequest }) =>
       sellerApi.updateProduct(productId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      // ['seller'] 무효화로 목록(['seller','products'])·판매자 상세(['seller','product-detail']) 모두 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
       toast.success('상품이 수정되었습니다.');
+    },
+  });
+}
+
+export function useAddProductImageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, images }: { productId: number; images: File[] }) =>
+      sellerApi.addProductImage(productId, images),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      // ['seller'] 무효화로 판매자 상세(['seller','product-detail'])의 이미지 목록도 즉시 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      toast.success('이미지가 추가되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '이미지 추가에 실패했습니다.');
+    },
+  });
+}
+
+export function useDeleteProductImageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, imageId }: { productId: number; imageId: number }) =>
+      sellerApi.deleteProductImage(productId, imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('이미지가 삭제되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '이미지 삭제에 실패했습니다.');
+    },
+  });
+}
+
+export function useSetThumbnailMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, imageId }: { productId: number; imageId: number }) =>
+      sellerApi.setThumbnail(productId, imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('대표 이미지가 변경되었습니다.');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message ?? '대표 이미지 변경에 실패했습니다.');
     },
   });
 }
@@ -50,14 +185,37 @@ export function useDeleteProductMutation() {
   });
 }
 
+export function useUpdateItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, data }: { itemId: number; data: ItemUpdateRequest }) =>
+      sellerApi.updateItem(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      // 가격·판매상태 변동이 상품 상세에 반영되도록 캐시 갱신
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success('옵션이 수정되었습니다.');
+    },
+  });
+}
+
 export function useInboundMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
-      sellerApi.inbound(itemId, quantity),
-    onSuccess: () => {
+    mutationFn: ({
+      itemId,
+      quantity,
+      reason,
+    }: {
+      itemId: number;
+      quantity: number;
+      reason?: string;
+    }) => sellerApi.inbound(itemId, { quantity, reason }),
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
-      toast.success('재고가 입고되었습니다.');
+      // 입고로 품절 여부가 바뀔 수 있어 상품 상세 캐시도 갱신
+      queryClient.invalidateQueries({ queryKey: ['products', 'detail'] });
+      toast.success(`입고 완료 — 현재 재고 ${res.currentStock.toLocaleString()}개`);
     },
   });
 }
@@ -68,6 +226,8 @@ export function useConfirmOrderMutation() {
     mutationFn: (orderItemId: number) => sellerApi.confirmOrder(orderItemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
+      // 주문 확인으로 상태별 건수가 바뀌므로 대시보드 카운트도 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller', 'order-counts'] });
       toast.success('주문이 확인되었습니다.');
     },
   });
@@ -78,16 +238,42 @@ export function useShipDeliveryMutation() {
   return useMutation({
     mutationFn: ({
       deliveryId,
-      carrierName,
-      trackingNumber,
+      deliveryCompany,
+      invoiceNumber,
     }: {
       deliveryId: number;
-      carrierName: string;
-      trackingNumber: string;
-    }) => sellerApi.shipDelivery(deliveryId, { carrierName, trackingNumber }),
+      deliveryCompany: string;
+      invoiceNumber: string;
+    }) => sellerApi.shipDelivery(deliveryId, { deliveryCompany, invoiceNumber }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['seller'] });
       toast.success('배송이 시작되었습니다.');
+    },
+  });
+}
+
+export function useRejectOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderItemId, reason }: { orderItemId: number; reason: string }) =>
+      sellerApi.rejectOrder(orderItemId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
+      // 주문 거절로 상태별 건수가 바뀌므로 대시보드 카운트도 갱신
+      queryClient.invalidateQueries({ queryKey: ['seller', 'order-counts'] });
+      toast.success('주문을 거절했습니다.');
+    },
+  });
+}
+
+export function useUpdateDeliveryStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deliveryId, status }: { deliveryId: number; status: DeliveryStatus }) =>
+      sellerApi.updateDeliveryStatus(deliveryId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller'] });
+      toast.success('배송 상태가 변경되었습니다.');
     },
   });
 }

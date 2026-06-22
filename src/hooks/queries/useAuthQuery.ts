@@ -18,6 +18,7 @@ export function useSignupMutation() {
 
 export function useLoginMutation() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const login = useAuthStore((s) => s.login);
 
   return useMutation({
@@ -33,12 +34,21 @@ export function useLoginMutation() {
         data.accessToken,
         data.expiresIn
       );
+      // 로그인 직후 게스트 장바구니 캐시를 비운다.
+      // 백엔드가 guest_cart_id 장바구니를 회원 장바구니로 병합하므로,
+      // 캐시를 남겨두면 병합 전 게스트 데이터(cartItemId=null)가 보여 주문 버튼이 동작하지 않거나
+      // 기존 장바구니가 빈 것처럼 표시된다. 다음 진입 시 새 토큰으로 다시 불러오게 한다.
+      queryClient.removeQueries({ queryKey: ['cart'] });
       toast.success(`${data.name}님, 환영합니다!`);
 
       // 역할별 분기
       if (data.role === 'SELLER') navigate('/seller');
       else if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN') navigate('/admin');
       else navigate('/');
+    },
+    onError: (error: any) => {
+      // 전역 인터셉터는 401 토스트를 의도적으로 막아두므로(보안), 로그인 실패는 여기서 직접 안내한다.
+      toast.error(error?.response?.data?.message ?? '이메일 또는 비밀번호를 확인해주세요.');
     },
   });
 }

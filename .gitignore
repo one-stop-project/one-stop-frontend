@@ -7,3 +7,8 @@ dist-ssr
 *.log
 .vscode/*
 !.vscode/extensions.json
+
+# TS build artifacts (tsc -b composite emit)
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

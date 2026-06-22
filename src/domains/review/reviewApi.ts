@@ -1,12 +1,12 @@
 import { apiClient, ApiResponse, PageResponse } from '@/api/client';
 
 // ════════════════════════════════════════════════════════════
-//  리뷰 도메인 — ReviewController + AiReviewSummaryController 기반
-//   POST   /api/reviews                            리뷰 작성
-//   PATCH  /api/reviews/{reviewId}                 리뷰 수정
+//  리뷰 도메인 — ReviewController + MyReviewController + AiReviewSummaryController 기반
+//   POST   /api/reviews                            리뷰 작성 (multipart/form-data)
+//   PATCH  /api/reviews/{reviewId}                 리뷰 수정 (multipart/form-data)
 //   DELETE /api/reviews/{reviewId}                 리뷰 삭제
-//   GET    /api/reviews/me                         내 리뷰 목록 (페이징)
-//   GET    /api/reviews/reviewable                 작성 가능한 리뷰 목록
+//   GET    /api/users/me/reviews                   내 리뷰 목록 (페이징)
+//   GET    /api/users/me/reviewable                작성 가능한 리뷰 목록
 //   GET    /api/products/{productId}/reviews/ai-summary  AI 리뷰 요약
 // ════════════════════════════════════════════════════════════
 
@@ -16,7 +16,7 @@ export interface Review {
   orderItemId: number;
   rating: number;
   content: string;
-  imageUrls: string[];
+  images: string[];          // 백엔드 ReviewResponse.images
   createdAt: string;
   updatedAt: string;
 }
@@ -36,7 +36,7 @@ export interface ProductReview {
   reviewerName: string;
   rating: number;
   content: string;
-  imageUrls: string[];
+  images: string[];          // 백엔드 ProductReviewResponse.images
   createdAt: string;
 }
 
@@ -49,29 +49,36 @@ export interface ReviewableOrderItem {
   deliveredAt: string;
 }
 
+// 작성 요청 본문 (multipart의 'request' 파트 JSON) — 이미지 파일은 별도 'images' 파트
 export interface CreateReviewRequest {
   orderItemId: number;       // @NotNull
   rating: number;            // 1~5
   content: string;           // 10~1000자
-  imageUrls?: string[];      // 최대 5장
 }
 
+// 수정 요청 본문 (multipart의 'request' 파트 JSON) — 새 이미지 파일은 별도 'newImages' 파트
 export interface UpdateReviewRequest {
-  rating: number;            // 1~5
-  content: string;           // 10~1000자
-  retainedImageUrls?: string[];  // 유지할 기존 이미지
-  newImageUrls?: string[];       // 새로 추가할 이미지
+  rating: number;            // 1~5, 필수
+  content: string;           // 10~1000자, 필수
+  retainedImageUrls: string[]; // @NotNull, 최대 5장 — 수정 후에도 유지할 기존 이미지 URL 목록
 }
 
-// AI 리뷰 요약
+// AI 리뷰 요약 (BE AiReviewSummaryResponse / ReviewSummary 와 1:1)
+export type ReviewSentiment = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'UNAVAILABLE';
+export type AiSummaryStatus = 'READY' | 'PENDING' | 'INSUFFICIENT';
+
+export interface ReviewSummary {
+  pros: string[];
+  cons: string[];
+  keywords: string[];
+  sentiment: ReviewSentiment;
+}
+
 export interface AiReviewSummary {
   reviewCount: number;
   averageRating: number;
-  summary: {
-    positive?: string;
-    negative?: string;
-    keywords?: string[];
-  } | null;
+  summary: ReviewSummary | null; // status가 PENDING/INSUFFICIENT면 null
+  status: AiSummaryStatus;
 }
 
 export interface MyReviewParams {
@@ -79,14 +86,37 @@ export interface MyReviewParams {
   size?: number;
 }
 
+// 백엔드 @RequestPart("request")는 JSON 파트로 받음 — application/json 타입의 Blob으로 첨부
+function jsonPart(data: unknown): Blob {
+  return new Blob([JSON.stringify(data)], { type: 'application/json' });
+}
+
+// FormData 전송 시 axios 인스턴스 기본 Content-Type(application/json)을 제거해
+// 브라우저가 multipart 경계(boundary)를 자동으로 붙이게 함
+const MULTIPART_CONFIG = { headers: { 'Content-Type': undefined } as any };
+
 export const reviewApi = {
-  create: async (data: CreateReviewRequest): Promise<Review> => {
-    const res = await apiClient.post<ApiResponse<Review>>('/reviews', data);
+  create: async (data: CreateReviewRequest, images?: File[]): Promise<Review> => {
+    const fd = new FormData();
+    fd.append('request', jsonPart(data));
+    (images ?? []).forEach((file) => fd.append('images', file));
+    const res = await apiClient.post<ApiResponse<Review>>('/reviews', fd, MULTIPART_CONFIG);
     return res.data.data;
   },
 
-  update: async (reviewId: number, data: UpdateReviewRequest): Promise<Review> => {
-    const res = await apiClient.patch<ApiResponse<Review>>(`/reviews/${reviewId}`, data);
+  update: async (
+    reviewId: number,
+    data: UpdateReviewRequest,
+    newImages?: File[]
+  ): Promise<Review> => {
+    const fd = new FormData();
+    fd.append('request', jsonPart(data));
+    (newImages ?? []).forEach((file) => fd.append('newImages', file));
+    const res = await apiClient.patch<ApiResponse<Review>>(
+      `/reviews/${reviewId}`,
+      fd,
+      MULTIPART_CONFIG
+    );
     return res.data.data;
   },
 
@@ -95,7 +125,7 @@ export const reviewApi = {
   },
 
   getMyReviews: async (params: MyReviewParams = {}): Promise<PageResponse<Review>> => {
-    const res = await apiClient.get<ApiResponse<PageResponse<Review>>>('/reviews/me', {
+    const res = await apiClient.get<ApiResponse<PageResponse<Review>>>('/users/me/reviews', {
       params,
     });
     return res.data.data;
@@ -104,7 +134,7 @@ export const reviewApi = {
   // 작성 가능한 리뷰 목록 (배송완료 + 미작성)
   getReviewable: async (): Promise<ReviewableOrderItem[]> => {
     const res = await apiClient.get<ApiResponse<ReviewableOrderItem[]>>(
-      '/reviews/reviewable'
+      '/users/me/reviewable'
     );
     return res.data.data;
   },

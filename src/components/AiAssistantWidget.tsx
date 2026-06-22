@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sparkles, Send, X } from 'lucide-react';
 import { useShoppingAssistantMutation } from '@/hooks/queries/useAiQuery';
+import { parseId } from '@/utils/parseId';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ════════════════════════════════════════════════════════════
 //  AI 쇼핑 어시스턴트 — 플로팅 채팅 위젯
@@ -22,10 +25,17 @@ export default function AiAssistantWidget() {
 
   const askMutation = useShoppingAssistantMutation();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  // 상품목록 등에서 ?categoryId=N 이 있으면 현재 카테고리 힌트로 전달(없으면 전체 검색)
+  const categoryId = parseId(searchParams.get('categoryId')) ?? undefined;
+  // AI 질의(/api/ai/assistant)는 백엔드에서 인증 필요 — 비로그인은 401이므로 위젯을 숨김
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, askMutation.isPending]);
+
+  if (!isAuthenticated) return null;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +45,7 @@ export default function AiAssistantWidget() {
     setMessages((prev) => [...prev, { role: 'user', text: message }]);
     setInput('');
 
-    askMutation.mutate(message, {
+    askMutation.mutate({ message, categoryId }, {
       onSuccess: (res) => {
         setMessages((prev) => [...prev, { role: 'assistant', text: res.answer }]);
       },

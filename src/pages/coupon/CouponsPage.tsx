@@ -10,6 +10,7 @@ import {
   MyCoupon,
   CouponDiscountType,
 } from '@/domains/coupon/couponApi';
+import { Pagination } from '@/components/common/Pagination';
 
 type Tab = 'available' | 'my';
 
@@ -95,7 +96,7 @@ function AvailableTab() {
             <p className="font-medium text-gray-900 mt-0.5">{coupon.name}</p>
             <p className="text-sm text-gray-500 mt-1">
               {coupon.minOrderPrice.toLocaleString()}원 이상 구매 시
-              {coupon.discountType === 'RATE' &&
+              {coupon.discountType === 'RATE' && coupon.maxDiscountPrice != null &&
                 ` · 최대 ${coupon.maxDiscountPrice.toLocaleString()}원`}
             </p>
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
@@ -105,8 +106,11 @@ function AvailableTab() {
           </div>
           <button
             onClick={() => issueMutation.mutate(coupon.couponId)}
-            disabled={issueMutation.isPending || coupon.remainingQuantity <= 0}
-            className="btn-primary px-5 py-2 ml-4 shrink-0"
+            disabled={
+              (issueMutation.isPending && issueMutation.variables === coupon.couponId) ||
+              coupon.remainingQuantity <= 0
+            }
+            className="btn-primary px-5 py-2 ml-4 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {coupon.remainingQuantity <= 0 ? '소진' : '받기'}
           </button>
@@ -118,7 +122,8 @@ function AvailableTab() {
 
 // ── 내 쿠폰 ──
 function MyTab() {
-  const { data, isLoading } = useMyCouponsQuery();
+  const [page, setPage] = useState(0);
+  const { data, isLoading } = useMyCouponsQuery({ page, size: 10 });
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-400">불러오는 중...</div>;
@@ -178,6 +183,11 @@ function MyTab() {
           </div>
         );
       })}
+      <Pagination
+        page={page}
+        totalPages={data?.totalPages ?? 1}
+        onChange={setPage}
+      />
     </div>
   );
 }

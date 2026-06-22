@@ -1,16 +1,31 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, User as UserIcon, Lock, Trash2 } from 'lucide-react';
+import { Package, User as UserIcon, Lock, Trash2, Crown, Star, Coins, Ticket } from 'lucide-react';
 import { useMyInfoQuery, useUpdateMyInfoMutation } from '@/hooks/queries/useUserQuery';
+import {
+  useMySubscriptionQuery,
+  useSubscribeMutation,
+  useCancelSubscriptionMutation,
+} from '@/hooks/queries/useSubscriptionQuery';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatPhone, formatDate } from '@/utils/format';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function MyPage() {
-  const { data: me, isLoading } = useMyInfoQuery();
+  const { data: me, isLoading, isError } = useMyInfoQuery();
   const updateMutation = useUpdateMyInfoMutation();
+  const isBuyer = useAuthStore((s) => s.hasRole)('BUYER'); // 주문·리뷰·포인트·구독은 구매자 전용
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', address: '' });
 
+  if (isError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState title="내 정보를 불러오지 못했습니다" description="잠시 후 다시 시도해주세요." />
+      </div>
+    );
+  }
   if (isLoading || !me) return <PageSpinner />;
 
   const startEditing = () => {
@@ -40,19 +55,42 @@ export default function MyPage() {
 
             <div className="space-y-1 text-left text-xs text-gray-500">
               <p>가입일: {formatDate(me.createdAt)}</p>
-              <p>최근 로그인: {formatDate(me.lastLoginAt)}</p>
+              {me.social && me.provider && <p>{me.provider} 계정 연동</p>}
             </div>
           </div>
 
-          <nav className="card p-2 mt-4 space-y-1">
-            <Link
-              to="/orders"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
-            >
-              <Package size={18} className="text-gray-500" />
-              주문 내역
-            </Link>
-          </nav>
+          {isBuyer && (
+            <nav className="card p-2 mt-4 space-y-1">
+              <Link
+                to="/orders"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Package size={18} className="text-gray-500" />
+                주문 내역
+              </Link>
+              <Link
+                to="/mypage/reviews"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Star size={18} className="text-gray-500" />
+                리뷰 관리
+              </Link>
+              <Link
+                to="/mypage/points"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Coins size={18} className="text-gray-500" />
+                포인트
+              </Link>
+              <Link
+                to="/coupons"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm"
+              >
+                <Ticket size={18} className="text-gray-500" />
+                쿠폰
+              </Link>
+            </nav>
+          )}
         </aside>
 
         {/* 메인 — 정보 수정 */}
@@ -115,7 +153,9 @@ export default function MyPage() {
             )}
           </section>
 
-          {!me.isOAuth2User && (
+          {isBuyer && <SubscriptionSection />}
+
+          {!me.social && (
             <section className="card p-6">
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-2">
                 <Lock size={20} className="text-primary-600" />
@@ -145,6 +185,85 @@ export default function MyPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function SubscriptionSection() {
+  const { data: sub, isLoading } = useMySubscriptionQuery();
+  const subscribe = useSubscribeMutation();
+  const cancel = useCancelSubscriptionMutation();
+
+  const active = sub != null && sub.status === 'ACTIVE';
+  // 해지(CANCELLED)는 종료일까지 혜택이 유지되고 재구독이 막혀 있다(백엔드 규칙).
+  const cancelledButValid = sub != null && sub.status === 'CANCELLED';
+
+  const handleCancel = () => {
+    const reason = prompt('구독 해지 사유를 입력하세요');
+    if (!reason || !reason.trim()) return;
+    cancel.mutate({ reason: reason.trim() });
+  };
+
+  return (
+    <section className="card p-6">
+      <h2 className="text-lg font-semibold flex items-center gap-2 mb-3">
+        <Crown size={20} className="text-primary-600" />
+        멤버십 구독
+      </h2>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-400">불러오는 중...</p>
+      ) : active ? (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">이용 중</span>
+            <span className="text-sm text-gray-600">{sub!.daysLeft}일 남음</span>
+          </div>
+          <dl className="space-y-2 text-sm mb-4">
+            <Row label="시작일" value={formatDate(sub!.startAt)} />
+            <Row label="종료일" value={formatDate(sub!.endAt)} />
+            <Row label="다음 결제일" value={formatDate(sub!.nextPaymentDate)} />
+          </dl>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={cancel.isPending}
+            className="text-sm text-red-600 hover:text-red-700 font-medium"
+          >
+            구독 해지 →
+          </button>
+        </div>
+      ) : cancelledButValid ? (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">해지됨</span>
+            <span className="text-sm text-gray-600">종료일까지 {sub!.daysLeft}일 혜택 유지</span>
+          </div>
+          <dl className="space-y-2 text-sm mb-3">
+            <Row label="시작일" value={formatDate(sub!.startAt)} />
+            <Row label="혜택 종료일" value={formatDate(sub!.endAt)} />
+          </dl>
+          <p className="text-xs text-gray-400">
+            해지하셨지만 종료일까지는 멤버십 혜택이 유지됩니다. 재구독은 기간 종료 후 가능합니다.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-gray-600 mb-4">
+            멤버십에 가입하면 주문 시 할인 등 혜택을 받을 수 있어요.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('멤버십을 구독하시겠습니까?')) subscribe.mutate();
+            }}
+            disabled={subscribe.isPending}
+            className="btn-primary"
+          >
+            {subscribe.isPending ? '처리 중...' : '멤버십 구독하기'}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 

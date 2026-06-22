@@ -1,16 +1,33 @@
-import { LayoutDashboard, Package, Store, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Package, Store, ShoppingBag, FolderTree, Ticket, Crown, ShieldCheck, BarChart3, ShieldAlert, ScrollText, LucideIcon } from 'lucide-react';
 import { DashboardLayout } from './DashboardLayout';
+import { useAuthStore } from '@/store/useAuthStore';
+
+interface AdminNav {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  superAdminOnly?: boolean; // 최고관리자에게만 노출
+}
+
+const NAV: AdminNav[] = [
+  { to: '/admin', label: '대시보드', icon: LayoutDashboard },
+  { to: '/admin/products', label: '상품 관리', icon: Package },
+  { to: '/admin/sellers', label: '판매자 관리', icon: Store },
+  { to: '/admin/orders', label: '주문 조회', icon: ShoppingBag },
+  { to: '/admin/categories', label: '카테고리 관리', icon: FolderTree },
+  { to: '/admin/coupons', label: '쿠폰 관리', icon: Ticket },
+  { to: '/admin/subscriptions', label: '구독 관리', icon: Crown },
+  { to: '/admin/analytics', label: '운영 분석', icon: BarChart3 },
+  { to: '/admin/users', label: '권한 관리', icon: ShieldCheck, superAdminOnly: true },
+  { to: '/admin/system', label: '시스템 점검', icon: ShieldAlert, superAdminOnly: true },
+  { to: '/admin/security-audit', label: '보안 감사 로그', icon: ScrollText, superAdminOnly: true },
+];
 
 export function AdminLayout() {
-  return (
-    <DashboardLayout
-      title="관리자"
-      navItems={[
-        { to: '/admin', label: '대시보드', icon: LayoutDashboard },
-        { to: '/admin/products', label: '상품 관리', icon: Package },
-        { to: '/admin/sellers', label: '판매자 관리', icon: Store },
-        { to: '/admin/orders', label: '주문 조회', icon: ShoppingBag },
-      ]}
-    />
+  const isSuperAdmin = useAuthStore((s) => s.hasRole)('SUPER_ADMIN');
+  const navItems = NAV.filter((item) => !item.superAdminOnly || isSuperAdmin).map(
+    ({ to, label, icon }) => ({ to, label, icon })
   );
+
+  return <DashboardLayout title="관리자" navItems={navItems} />;
 }

@@ -1,13 +1,17 @@
 import { useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { CreditCard, Building2 } from 'lucide-react';
 import { useOrderDetailQuery } from '@/hooks/queries/useOrderQuery';
 import { useApprovePaymentMutation } from '@/hooks/queries/usePaymentQuery';
 import { PageSpinner } from '@/components/common/Spinner';
+import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
-import { PaymentMethod } from '@/types/common';
+import { parseId } from '@/utils/parseId';
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: any }[] = [
+// 백엔드는 결제수단을 받지 않음(orderId+amount만). 아래는 화면 표시용 UI 선택지일 뿐 서버로 전송하지 않음
+type DisplayMethod = 'CARD' | 'BANK_TRANSFER' | 'KAKAO_PAY' | 'TOSS_PAY';
+
+const PAYMENT_METHODS: { value: DisplayMethod; label: string; icon: any }[] = [
   { value: 'CARD', label: '신용/체크카드', icon: CreditCard },
   { value: 'BANK_TRANSFER', label: '계좌이체', icon: Building2 },
   { value: 'KAKAO_PAY', label: '카카오페이', icon: () => <span className="text-yellow-500 font-bold">K</span> },
@@ -16,15 +20,29 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: any }[] = [
 
 export default function PaymentPage() {
   const { id } = useParams<{ id: string }>();
-  const orderId = id ? Number(id) : null;
+  const orderId = parseId(id);
 
-  const { data: order, isLoading } = useOrderDetailQuery(orderId);
+  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
   const approveMutation = useApprovePaymentMutation();
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('CARD');
+  const [selectedMethod, setSelectedMethod] = useState<DisplayMethod>('CARD');
 
+  if (orderId === null || isError) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16">
+        <EmptyState
+          title="주문을 찾을 수 없습니다"
+          action={
+            <Link to="/orders" className="btn-primary inline-block">
+              주문 내역으로
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (isLoading || !order) return <PageSpinner />;
 
-  if (order.status !== 'PENDING') {
+  if (order.status !== 'PENDING_PAYMENT') {
     return <Navigate to={`/orders/${orderId}`} replace />;
   }
 
@@ -32,7 +50,6 @@ export default function PaymentPage() {
     approveMutation.mutate({
       orderId: order.orderId,
       amount: order.finalPrice,
-      paymentMethod: selectedMethod,
     });
   };
 
@@ -44,12 +61,12 @@ export default function PaymentPage() {
       <section className="card p-6 mb-4">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">주문 정보</h2>
         <div className="space-y-3 text-sm">
-          {order.items.map((item) => (
+          {order.orderItems.map((item) => (
             <div key={item.orderItemId} className="flex justify-between">
               <span className="text-gray-700">
-                {item.productName} ({item.itemName}) × {item.quantity}
+                {item.itemName} × {item.quantity}
               </span>
-              <span className="font-medium">{formatPrice(item.subtotal)}</span>
+              <span className="font-medium">{formatPrice(item.price * item.quantity)}</span>
             </div>
           ))}
           <hr />
@@ -57,9 +74,21 @@ export default function PaymentPage() {
             <span className="text-gray-600">상품 금액</span>
             <span>{formatPrice(order.totalPrice)}</span>
           </div>
+          {order.discountPrice > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">쿠폰 할인</span>
+              <span className="text-primary-600">-{formatPrice(order.discountPrice)}</span>
+            </div>
+          )}
+          {order.usedPoint > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">포인트 사용</span>
+              <span className="text-primary-600">-{formatPrice(order.usedPoint)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-600">배송비</span>
-            <span>{order.shippingFee === 0 ? '무료' : formatPrice(order.shippingFee)}</span>
+            <span>{order.deliveryFee === 0 ? '무료' : formatPrice(order.deliveryFee)}</span>
           </div>
           <hr />
           <div className="flex justify-between text-base font-semibold">

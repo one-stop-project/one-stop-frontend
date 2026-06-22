@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Minus, Plus, X, ChevronRight } from 'lucide-react';
 import {
@@ -9,22 +9,39 @@ import {
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatPrice } from '@/utils/format';
+import { useAuthStore } from '@/store/useAuthStore';
+import toast from 'react-hot-toast';
 
+// 백엔드 기본 배송비. 무료배송은 구독 혜택일 때만 적용되며(주문 생성 시 확정),
+// '5만원 이상 무료' 같은 금액 기준은 백엔드에 없다. 장바구니에선 기본 배송비만 추정 표시한다.
 const SHIPPING_FEE = 3000;
-const FREE_SHIPPING_THRESHOLD = 50000;
 
 export default function CartPage() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: cart, isLoading } = useCartQuery();
   const updateMutation = useUpdateCartItemMutation();
   const removeMutation = useRemoveCartItemMutation();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
+  // 장바구니가 처음 로드되면 전체 선택을 기본값으로 둔다.
+  // (비로그인 → 로그인 시 병합된 상품도 선택 안 된 채로 넘어오지 않도록)
+  // 첫 로드 때만 동작하므로 이후 사용자가 개별 해제한 선택은 보존된다.
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (cart && !didInit.current) {
+      didInit.current = true;
+      setSelectedIds(new Set((cart.content ?? []).map((i) => i.itemId)));
+    }
+  }, [cart]);
+
   if (isLoading) return <PageSpinner />;
 
   // ★ 백엔드는 content 배열, 기준값은 itemId
   const items = cart?.content ?? [];
-  const allSelected = items.length > 0 && selectedIds.size === items.length;
+  // 선택 집합엔 삭제된 상품의 itemId가 남을 수 있어, 화면 표시(전체선택·카운터)는 항상 현재 목록과의 교집합으로 계산한다.
+  const selectedItems = items.filter((i) => selectedIds.has(i.itemId));
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
 
   const toggleAll = () => {
     if (allSelected) setSelectedIds(new Set());
@@ -38,22 +55,31 @@ export default function CartPage() {
     setSelectedIds(next);
   };
 
-  const selectedItems = items.filter((i) => selectedIds.has(i.itemId));
   // subtotal은 price × quantity로 계산 (백엔드에 subtotal 필드 없음)
   const subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE;
+  // 선택 상품이 없으면 0, 있으면 기본 배송비(구독 무료배송은 결제 단계에서 확정)
+  const shippingFee = subtotal === 0 ? 0 : SHIPPING_FEE;
   const total = subtotal + shippingFee;
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) return;
-    navigate('/checkout', {
-      state: {
-        items: selectedItems.map((i) => ({
-          productItemId: i.itemId,    // 주문 시 itemId를 productItemId로 전달
-          quantity: i.quantity,
-        })),
-      },
-    });
+    // 주문 생성은 백엔드 BUYER 전용 — 비로그인 게스트는 로그인으로 유도(로그인 시 장바구니 병합)
+    if (!isAuthenticated) {
+      toast.error('주문하려면 로그인이 필요합니다.');
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
+      return;
+    }
+    // 장바구니 주문 = orderType CART + cartItemIds(로그인 장바구니의 행 id). 주문 후 백엔드가 장바구니에서 비움.
+    const cartItemIds = selectedItems
+      .map((i) => i.cartItemId)
+      .filter((id): id is number => id != null);
+    // 정상 흐름에선 로그인 장바구니에 cartItemId가 항상 존재. 비어 있으면 병합 전 게스트 데이터가 남은 상태이므로
+    // 무음으로 멈추지 말고 새로고침을 안내한다.
+    if (cartItemIds.length === 0) {
+      toast.error('장바구니 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    navigate('/checkout', { state: { cartItemIds, subtotal } });
   };
 
   if (items.length === 0) {
@@ -89,7 +115,7 @@ export default function CartPage() {
                 className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
               />
               <span className="text-sm font-medium">
-                전체 선택 ({selectedIds.size}/{items.length})
+                전체 선택 ({selectedItems.length}/{items.length})
               </span>
             </label>
           </div>
@@ -158,10 +184,11 @@ export default function CartPage() {
                           onClick={() =>
                             updateMutation.mutate({
                               itemId: item.itemId,
-                              quantity: Math.min(item.stock, item.quantity + 1),
+                              // 백엔드 수량 상한 99(@Max) — 재고와 99 중 작은 값으로 제한
+                              quantity: Math.min(99, item.stock, item.quantity + 1),
                             })
                           }
-                          disabled={item.quantity >= item.stock}
+                          disabled={!item.available || item.quantity >= Math.min(99, item.stock)}
                           className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                         >
                           <Plus size={12} />
@@ -200,9 +227,9 @@ export default function CartPage() {
                   {shippingFee === 0 ? '무료' : formatPrice(shippingFee)}
                 </span>
               </div>
-              {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
-                <p className="text-xs text-primary-600 bg-primary-50 px-3 py-2 rounded">
-                  💡 {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} 더 담으면 무료배송!
+              {subtotal > 0 && (
+                <p className="text-xs text-gray-500">
+                  구독 회원은 배송비가 무료이며, 최종 배송비는 결제 단계에서 확정됩니다.
                 </p>
               )}
             </div>

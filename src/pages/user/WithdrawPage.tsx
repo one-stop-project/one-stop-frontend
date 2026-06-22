@@ -15,8 +15,8 @@ export default function WithdrawPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
-    // OAuth2 사용자는 비밀번호 불필요
-    withdrawMutation.mutate({ password: me?.isOAuth2User ? '' : password });
+    // 소셜(OAuth2) 사용자는 비밀번호 체크 없음 — 백엔드 @NotBlank 통과용 더미값 전달(서비스에서 무시됨)
+    withdrawMutation.mutate({ password: me?.social ? '_SOCIAL_' : password });
   };
 
   return (
@@ -38,7 +38,7 @@ export default function WithdrawPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!me?.isOAuth2User && (
+          {!me?.social && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 비밀번호 확인

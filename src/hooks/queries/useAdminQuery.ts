@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { adminApi } from '@/domains/admin/adminApi';
-import { ProductStatus } from '@/types/common';
+import { OrderStatus } from '@/types/common';
+
+export interface AdminOrderFilters {
+  status?: OrderStatus;
+  keyword?: string;
+  from?: string;
+  to?: string;
+}
 
 export function useDashboardQuery() {
   return useQuery({
@@ -11,24 +18,24 @@ export function useDashboardQuery() {
   });
 }
 
-export function useAdminProductsQuery(page = 0, size = 20, status?: ProductStatus) {
+export function useAdminProductsQuery(page = 0, size = 20) {
   return useQuery({
-    queryKey: ['admin', 'products', page, size, status],
-    queryFn: () => adminApi.getProducts(page, size, status),
+    queryKey: ['admin', 'products', page, size],
+    queryFn: () => adminApi.getProducts(page, size),
   });
 }
 
-export function useAdminSellersQuery(page = 0, size = 20) {
+export function useAdminSellersQuery() {
   return useQuery({
-    queryKey: ['admin', 'sellers', page, size],
-    queryFn: () => adminApi.getSellers(page, size),
+    queryKey: ['admin', 'sellers'],
+    queryFn: () => adminApi.getSellers(),
   });
 }
 
-export function useAdminOrdersQuery(page = 0, size = 20) {
+export function useAdminOrdersQuery(page = 0, size = 20, filters: AdminOrderFilters = {}) {
   return useQuery({
-    queryKey: ['admin', 'orders', page, size],
-    queryFn: () => adminApi.getOrders(page, size),
+    queryKey: ['admin', 'orders', page, size, filters],
+    queryFn: () => adminApi.getOrders(page, size, filters),
   });
 }
 

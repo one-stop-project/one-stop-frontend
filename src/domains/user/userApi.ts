@@ -9,9 +9,10 @@ export interface UserMeResponse {
   address: string;
   role: UserRole;
   status: UserStatus;
-  isOAuth2User: boolean;
+  social: boolean; // 소셜(OAuth2) 가입 여부 — 항상 존재
+  provider?: string | null; // "kakao" 등 — 소셜 계정만
+  subscription?: { active: boolean; endAt: string } | null;
   createdAt: string;
-  lastLoginAt: string | null;
 }
 
 export interface UserUpdateRequest {

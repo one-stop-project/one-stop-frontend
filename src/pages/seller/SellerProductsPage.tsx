@@ -4,20 +4,23 @@ import { Plus } from 'lucide-react';
 import { useSellerProductsQuery, useDeleteProductMutation } from '@/hooks/queries/useSellerQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { Pagination } from '@/components/common/Pagination';
 import { formatPrice } from '@/utils/format';
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  ACTIVE: 'bg-green-100 text-green-700',
-  INACTIVE: 'bg-gray-100 text-gray-700',
+  APPROVE_REQUESTED: 'bg-yellow-100 text-yellow-700',
+  APPROVED: 'bg-green-100 text-green-700',
   REJECTED: 'bg-red-100 text-red-700',
+  DISCONTINUED: 'bg-gray-100 text-gray-700',
+  FORCE_INACTIVE: 'bg-orange-100 text-orange-700',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: '승인 대기',
-  ACTIVE: '판매 중',
-  INACTIVE: '판매 중지',
+  APPROVE_REQUESTED: '승인 요청',
+  APPROVED: '판매 중',
   REJECTED: '반려됨',
+  DISCONTINUED: '판매 중단',
+  FORCE_INACTIVE: '강제 비활성',
 };
 
 export default function SellerProductsPage() {
@@ -48,6 +51,7 @@ export default function SellerProductsPage() {
           }
         />
       ) : (
+        <>
         <div className="card overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -59,7 +63,7 @@ export default function SellerProductsPage() {
                   가격
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
-                  재고
+                  판매량
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">
                   상태
@@ -74,15 +78,24 @@ export default function SellerProductsPage() {
                 <tr key={p.productId} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded shrink-0" />
+                      {p.thumbnailUrl ? (
+                        <img
+                          src={p.thumbnailUrl}
+                          alt={p.name}
+                          onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                          className="w-12 h-12 rounded object-cover shrink-0 bg-gray-100"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded shrink-0" />
+                      )}
                       <div>
                         <p className="font-medium text-sm">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.categoryName}</p>
+                        <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm">{formatPrice(p.price)}</td>
-                  <td className="px-6 py-4 text-sm">{p.totalStock.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-sm">{formatPrice(p.minPrice)}</td>
+                  <td className="px-6 py-4 text-sm">{p.salesCount.toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[p.status]}`}
@@ -91,22 +104,37 @@ export default function SellerProductsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => {
-                        if (confirm('정말 삭제하시겠습니까?')) {
-                          deleteMutation.mutate(p.productId);
-                        }
-                      }}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      삭제
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        to={`/seller/products/${p.productId}/edit`}
+                        className="text-sm text-primary-600 hover:underline"
+                      >
+                        수정
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (confirm('정말 삭제하시겠습니까?')) {
+                            deleteMutation.mutate(p.productId);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending && deleteMutation.variables === p.productId}
+                        className="text-sm text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          totalPages={data?.totalPages ?? 1}
+          onChange={setPage}
+        />
+        </>
       )}
     </div>
   );

@@ -13,7 +13,9 @@ export function Header() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const cartCount = cart?.content.length ?? 0;
+  // 전체 장바구니 상품 종류 수(현재 페이지 길이가 아닌 totalElements 기준)
+  const cartCount = cart?.totalElements ?? 0;
+  const isBuyer = hasRole('BUYER'); // 장바구니·주문 등 구매자 전용 메뉴 노출 기준
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,25 +79,28 @@ export function Header() {
 
         {/* 우측 아이콘 */}
         <div className="flex items-center gap-1">
+          {/* 장바구니 — 비로그인 게스트와 구매자에게 노출(판매자/관리자 제외) */}
+          {(!isAuthenticated || isBuyer) && (
+            <Link
+              to="/cart"
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="장바구니"
+            >
+              <ShoppingCart size={22} className="text-gray-700" />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 bg-primary-600 text-white
+                             text-[10px] font-bold rounded-full min-w-[18px] h-[18px]
+                             flex items-center justify-center px-1"
+                >
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
+          )}
+
           {isAuthenticated && (
             <>
-              <Link
-                to="/cart"
-                className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="장바구니"
-              >
-                <ShoppingCart size={22} className="text-gray-700" />
-                {cartCount > 0 && (
-                  <span
-                    className="absolute -top-0.5 -right-0.5 bg-primary-600 text-white 
-                               text-[10px] font-bold rounded-full min-w-[18px] h-[18px] 
-                               flex items-center justify-center px-1"
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </Link>
-
               <div className="relative">
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
@@ -124,13 +129,15 @@ export function Header() {
                       >
                         마이페이지
                       </Link>
-                      <Link
-                        to="/orders"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        주문 내역
-                      </Link>
+                      {isBuyer && (
+                        <Link
+                          to="/orders"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          주문 내역
+                        </Link>
+                      )}
                       <hr className="my-1 border-gray-100" />
                       <button
                         onClick={() => {

@@ -13,12 +13,23 @@ export interface ProductSummary {
   viewCount: number;
 }
 
+// 백엔드 PopularProductResponse 와 1:1 — 일반 ProductSummary 와 달리
+// viewCount 가 없고 rank(인기 순위)가 추가로 내려온다.
+export interface PopularProduct {
+  productId: number;
+  name: string;
+  thumbnailUrl: string | null;
+  minPrice: number;
+  salesCount: number;
+  rank: number;
+}
+
 // 백엔드 ProductItemResponse 와 1:1
 export interface ProductItem {
   itemId: number;
   optionName: string;    // 백엔드: optionName (name 아님!)
   price: number;
-  stock: number;
+  soldOut: boolean;      // 백엔드는 구매자에게 재고 수량을 숨기고 품절 여부만 내려줌
 }
 
 // 백엔드 ProductDetailResponse 와 1:1
@@ -34,11 +45,19 @@ export interface ProductDetail {
   items: ProductItem[];
   imageUrls: string[];         // 백엔드: imageUrls (images 아님!)
   categoryNames: string[];     // 백엔드: categoryNames
+  tags: string[];
+}
+
+// 백엔드 PopularKeywordResponse 와 1:1
+export interface PopularKeyword {
+  rank: number;
+  keyword: string;
+  count: number;
 }
 
 // 백엔드 CategoryTreeResponse 와 1:1
 export interface Category {
-  categoryId: number;
+  id: number;            // 백엔드 CategoryTreeResponse 필드명은 id (categoryId 아님)
   name: string;
   children: Category[];
 }
@@ -65,10 +84,10 @@ export const productApi = {
     return res.data.data;
   },
 
-  // 인기 상품 — ★ Page 응답 (배열 아님!)
-  getPopular: async (size: number = 8): Promise<PageResponse<ProductSummary>> => {
-    const res = await apiClient.get<ApiResponse<PageResponse<ProductSummary>>>('/products/popular', {
-      params: { size },
+  // 인기 상품 — ★ 배열 응답(List), 파라미터는 limit (size 아님)
+  getPopular: async (limit: number = 10): Promise<PopularProduct[]> => {
+    const res = await apiClient.get<ApiResponse<PopularProduct[]>>('/products/popular', {
+      params: { limit },
     });
     return res.data.data;
   },
@@ -90,6 +109,14 @@ export const productApi = {
   // 카테고리 트리
   getCategories: async (): Promise<Category[]> => {
     const res = await apiClient.get<ApiResponse<Category[]>>('/categories');
+    return res.data.data;
+  },
+
+  // 인기 검색어 — 배열 응답, 파라미터 limit(1~10)
+  getPopularKeywords: async (limit = 10): Promise<PopularKeyword[]> => {
+    const res = await apiClient.get<ApiResponse<PopularKeyword[]>>('/products/popular-keywords', {
+      params: { limit },
+    });
     return res.data.data;
   },
 };

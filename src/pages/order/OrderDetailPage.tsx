@@ -1,39 +1,56 @@
+import {useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
-import {MapPin, Package, Phone, Truck} from 'lucide-react';
+import {MapPin, Package, Phone, Truck, ChevronDown, ChevronUp} from 'lucide-react';
 import {useCancelOrderMutation, useOrderDetailQuery} from '@/hooks/queries/useOrderQuery';
-import {useOrderDeliveriesQuery} from '@/hooks/queries/useDeliveryQuery';
-import {PageSpinner} from '@/components/common/Spinner';
+import {useOrderDeliveriesQuery, useDeliveryHistoryQuery} from '@/hooks/queries/useDeliveryQuery';
+import {PageSpinner, Spinner} from '@/components/common/Spinner';
+import {EmptyState} from '@/components/common/EmptyState';
 import {formatDateTime, formatPrice} from '@/utils/format';
+import {parseId} from '@/utils/parseId';
+import {Delivery} from '@/domains/delivery/deliveryApi';
 import {DeliveryStatus, OrderStatus} from '@/types/common';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: '결제 대기',
+  PENDING_PAYMENT: '결제 대기',
   PAID: '결제 완료',
-  CONFIRMED: '판매자 확인',
-  SHIPPING: '배송 중',
-  DELIVERED: '배송 완료',
   CANCELLED: '취소됨',
-  REFUNDED: '환불됨',
 };
 
 const DELIVERY_STATUS_LABELS: Record<DeliveryStatus, string> = {
-  PREPARING: '배송 준비 중',
-  SHIPPED: '발송됨',
-  IN_TRANSIT: '배송 중',
-  DELIVERED: '배송 완료',
+  ACCEPT: '결제 완료',
+  INSTRUCT: '상품 준비 중',
+  DEPARTURE: '배송 지시',
+  DELIVERING: '배송 중',
+  FINAL_DELIVERY: '배송 완료',
+  ORDER_CANCELLED: '주문 취소',
 };
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const orderId = id ? Number(id) : null;
+  const orderId = parseId(id);
 
-  const { data: order, isLoading } = useOrderDetailQuery(orderId);
-  const { data: deliveries } = useOrderDeliveriesQuery(orderId);
+  const { data: order, isLoading, isError } = useOrderDetailQuery(orderId);
+  const { data: deliveries, isError: deliveriesError } = useOrderDeliveriesQuery(orderId);
   const cancelMutation = useCancelOrderMutation();
 
+  if (orderId === null || isError) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16">
+        <EmptyState
+          title="주문을 찾을 수 없습니다"
+          description="잘못된 주소이거나 접근 권한이 없는 주문일 수 있어요."
+          action={
+            <Link to="/orders" className="btn-primary inline-block">
+              주문 내역으로
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
   if (isLoading || !order) return <PageSpinner />;
 
-  const canCancel = order.status === 'PENDING' || order.status === 'PAID';
+  const canCancel = order.status === 'PENDING_PAYMENT' || order.status === 'PAID';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -54,25 +71,15 @@ export default function OrderDetailPage() {
           <p className="text-xs text-gray-500">{formatDateTime(order.createdAt)}</p>
         </div>
 
+        {/* 상세 항목 응답엔 productId/썸네일/판매자명이 없음 — itemName·수량·소계만 표시 */}
         <div className="space-y-3">
-          {order.items.map((item) => (
-            <div key={item.orderItemId} className="flex gap-3 py-2">
-              <Link
-                to={`/products/${item.productId}`}
-                className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0"
-              >
-                {item.thumbnailUrl && (
-                  <img src={item.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                )}
-              </Link>
+          {order.orderItems.map((item) => (
+            <div key={item.orderItemId} className="flex gap-3 py-2 items-center">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.productName}</p>
-                <p className="text-xs text-gray-500">
-                  {item.itemName} · {item.quantity}개
-                </p>
-                <p className="text-xs text-gray-400">{item.sellerName}</p>
+                <p className="text-sm font-medium truncate">{item.itemName}</p>
+                <p className="text-xs text-gray-500">{item.quantity}개</p>
               </div>
-              <p className="text-sm font-semibold">{formatPrice(item.subtotal)}</p>
+              <p className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</p>
             </div>
           ))}
         </div>
@@ -87,49 +94,43 @@ export default function OrderDetailPage() {
         <div className="space-y-2 text-sm">
           <p className="flex items-center gap-2">
             <span className="text-gray-500 w-16">받는 분</span>
-            <span className="font-medium">{order.receiverName}</span>
+            <span className="font-medium">{order.receiver.name}</span>
           </p>
           <p className="flex items-center gap-2">
             <Phone size={14} className="text-gray-400" />
-            <span className="font-medium">{order.receiverPhone}</span>
+            <span className="font-medium">{order.receiver.phone}</span>
           </p>
           <p className="flex items-start gap-2">
             <span className="text-gray-500 w-16">주소</span>
-            <span className="font-medium">{order.receiverAddress}</span>
+            <span className="font-medium">{order.receiver.address}</span>
           </p>
         </div>
       </section>
 
-      {/* 배송 추적 */}
-      {deliveries && deliveries.length > 0 && (
+      {/* 배송 추적 — 보조 정보. 못 불러와도(배송 미생성/일시 오류) 주문 본문엔 영향 없음 */}
+      {deliveriesError ? (
         <section className="card p-6 mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-            <Truck size={20} className="text-primary-600" />
+            <Truck size={20} className="text-gray-400" />
             배송 추적
           </h2>
-          <div className="space-y-3">
-            {deliveries.map((d) => (
-              <div key={d.deliveryId} className="border border-gray-100 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">
-                    {DELIVERY_STATUS_LABELS[d.status]}
-                  </span>
-                  {d.trackingNumber && (
-                    <span className="text-xs text-gray-500">
-                      {d.carrierName} {d.trackingNumber}
-                    </span>
-                  )}
-                </div>
-                {d.shippedAt && (
-                  <p className="text-xs text-gray-500">발송: {formatDateTime(d.shippedAt)}</p>
-                )}
-                {d.deliveredAt && (
-                  <p className="text-xs text-gray-500">완료: {formatDateTime(d.deliveredAt)}</p>
-                )}
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-gray-400">배송 정보를 불러오지 못했습니다.</p>
         </section>
+      ) : (
+        deliveries &&
+        deliveries.length > 0 && (
+          <section className="card p-6 mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+              <Truck size={20} className="text-primary-600" />
+              배송 추적
+            </h2>
+            <div className="space-y-3">
+              {deliveries.map((d) => (
+                <DeliveryTrackItem key={d.deliveryId} delivery={d} />
+              ))}
+            </div>
+          </section>
+        )
       )}
 
       {/* 결제 요약 */}
@@ -140,9 +141,21 @@ export default function OrderDetailPage() {
             <span className="text-gray-600">상품 금액</span>
             <span>{formatPrice(order.totalPrice)}</span>
           </div>
+          {order.discountPrice > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">쿠폰 할인</span>
+              <span className="text-primary-600">-{formatPrice(order.discountPrice)}</span>
+            </div>
+          )}
+          {order.usedPoint > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">포인트 사용</span>
+              <span className="text-primary-600">-{formatPrice(order.usedPoint)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-600">배송비</span>
-            <span>{order.shippingFee === 0 ? '무료' : formatPrice(order.shippingFee)}</span>
+            <span>{order.deliveryFee === 0 ? '무료' : formatPrice(order.deliveryFee)}</span>
           </div>
           <hr className="my-2" />
           <div className="flex justify-between text-base font-semibold">
@@ -157,17 +170,84 @@ export default function OrderDetailPage() {
         <Link to="/orders" className="btn-secondary flex-1 text-center">
           목록으로
         </Link>
+        {order.status === 'PENDING_PAYMENT' && (
+          <Link to={`/payment/${order.orderId}`} className="btn-primary flex-1 text-center">
+            결제하기
+          </Link>
+        )}
         {canCancel && (
           <button
             onClick={() => {
               if (confirm('정말 취소하시겠습니까?')) cancelMutation.mutate(order.orderId);
             }}
-            className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium"
+            disabled={cancelMutation.isPending}
+            className="flex-1 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             주문 취소
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// 배송 1건의 현재 상태 + 펼치면 상태변경 이력 타임라인(펼칠 때만 조회)
+function DeliveryTrackItem({ delivery }: { delivery: Delivery }) {
+  const [open, setOpen] = useState(false);
+  const { data: history, isLoading } = useDeliveryHistoryQuery(
+    open ? delivery.deliveryId : null
+  );
+
+  return (
+    <div className="border border-gray-100 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium">{DELIVERY_STATUS_LABELS[delivery.status]}</span>
+        {delivery.invoiceNumber && (
+          <span className="text-xs text-gray-500">
+            {delivery.deliveryCompany} {delivery.invoiceNumber}
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-gray-500">{delivery.itemName}</p>
+
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="mt-2 text-xs text-primary-600 flex items-center gap-1"
+        aria-expanded={open}
+      >
+        배송 이력
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {open && (
+        <div className="mt-3 border-t border-gray-100 pt-3">
+          {isLoading ? (
+            <div className="flex justify-center py-2">
+              <Spinner size="sm" />
+            </div>
+          ) : history && history.history.length > 0 ? (
+            <ol className="space-y-3">
+              {history.history.map((h, i) => (
+                <li key={i} className="flex gap-3 text-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary-600 mt-1" />
+                    {i < history.history.length - 1 && (
+                      <div className="w-px flex-1 bg-gray-200" />
+                    )}
+                  </div>
+                  <div className="pb-1">
+                    <p className="font-medium text-gray-900">{h.statusDesc}</p>
+                    <p className="text-xs text-gray-400">{formatDateTime(h.changedAt)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-xs text-gray-400">배송 이력이 없습니다.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

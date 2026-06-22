@@ -17,11 +17,11 @@ export function usePopularProductsQuery(size: number = 8) {
   });
 }
 
-export function useProductDetailQuery(productId: number | null) {
+export function useProductDetailQuery(productId: number | null, enabled = true) {
   return useQuery({
     queryKey: ['products', 'detail', productId],
     queryFn: () => productApi.getDetail(productId!),
-    enabled: productId !== null,
+    enabled: enabled && productId !== null,
     staleTime: 60 * 1000,
   });
 }
@@ -31,6 +31,14 @@ export function useRelatedProductsQuery(productId: number | null) {
     queryKey: ['products', 'related', productId],
     queryFn: () => productApi.getRelated(productId!),
     enabled: productId !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function usePopularKeywordsQuery(limit = 10) {
+  return useQuery({
+    queryKey: ['products', 'popular-keywords', limit],
+    queryFn: () => productApi.getPopularKeywords(limit),
     staleTime: 5 * 60 * 1000,
   });
 }
