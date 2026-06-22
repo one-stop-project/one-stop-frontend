@@ -7,6 +7,7 @@ export interface UserMeResponse {
   name: string;
   phone: string;
   address: string;
+  detailAddress?: string | null; // 상세주소 — 값이 있을 때만 내려옴(NON_NULL)
   role: UserRole;
   status: UserStatus;
   social: boolean; // 소셜(OAuth2) 가입 여부 — 항상 존재
@@ -19,6 +20,7 @@ export interface UserUpdateRequest {
   name?: string;
   phone?: string;
   address?: string;
+  detailAddress?: string;
 }
 
 export interface UserUpdateResponse {
@@ -26,6 +28,7 @@ export interface UserUpdateResponse {
   name: string;
   phone: string;
   address: string;
+  detailAddress?: string | null;
 }
 
 export interface PasswordChangeRequest {
