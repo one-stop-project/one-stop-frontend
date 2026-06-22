@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'ax
 import toast from 'react-hot-toast';
 
 /**
- * API Client — JWT 인증 자동 처리
+ * API Client — JWT 인증 자동 처리 - 확인 필요
  *
  * 기능:
  * 1. Request 인터셉터: Authorization 헤더 자동 주입
