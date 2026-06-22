@@ -19,7 +19,7 @@ const SEVERITY_STYLE: Record<SecurityAuditSeverity, string> = {
   INFO: 'bg-gray-100 text-gray-600',
 };
 
-export default function AdminSecurityAuditPage() {
+export default function AdminSecurityAuditPage({ embedded = false }: { embedded?: boolean }) {
   const [criticalPage, setCriticalPage] = useState(0);
   const [highRiskPage, setHighRiskPage] = useState(0);
 
@@ -39,14 +39,14 @@ export default function AdminSecurityAuditPage() {
   const categoryStats = Object.entries(statsQuery.data ?? {}).sort(([, a], [, b]) => b - a);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8">
+    <div className={embedded ? '' : 'mx-auto max-w-7xl px-4 py-8'}>
+      {!embedded && <div className="mb-8">
         <div className="mb-2 flex items-center gap-2">
           <ShieldAlert className="text-red-600" size={24} />
           <h1 className="text-2xl font-bold text-gray-900">보안 감사 로그</h1>
         </div>
         <p className="text-sm text-gray-600">치명적 이벤트와 고위험 활동을 한눈에 점검합니다.</p>
-      </div>
+      </div>}
 
       <section className="mb-10" aria-labelledby="category-stats-heading">
         <div className="mb-4 flex items-center gap-2">

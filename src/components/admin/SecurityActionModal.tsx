@@ -17,6 +17,7 @@ interface SecurityActionModalProps {
   isOpen: boolean;
   userId: number | null;
   userEmail: string | null;
+  userRole: 'BUYER' | 'SELLER';
   onClose: () => void;
 }
 
@@ -30,6 +31,7 @@ export default function SecurityActionModal({
   isOpen,
   userId,
   userEmail,
+  userRole,
   onClose,
 }: SecurityActionModalProps) {
   const [actionType, setActionType] = useState<SecurityActionType>('SUSPEND');
@@ -99,7 +101,9 @@ export default function SecurityActionModal({
         <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
           <div>
             <h2 id="security-action-title" className="text-lg font-bold text-gray-900">보안 제재</h2>
-            <p className="mt-1 text-sm text-gray-500">{userEmail ?? `회원 #${userId}`} · ID {userId}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {userEmail ?? `회원 #${userId}`} · ID {userId} · {userRole}
+            </p>
           </div>
           <button
             type="button"
