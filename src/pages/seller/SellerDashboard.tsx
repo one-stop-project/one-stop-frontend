@@ -8,6 +8,15 @@ import {
   useSellerProductSalesQuery,
 } from '@/hooks/queries/useSellerQuery';
 
+// 상품 상태 코드 → 한글 라벨 (상품 목록 화면과 동일한 표기)
+const PRODUCT_STATUS_LABELS: Record<string, string> = {
+  APPROVE_REQUESTED: '승인 요청',
+  APPROVED: '판매 중',
+  REJECTED: '반려됨',
+  DISCONTINUED: '판매 중단',
+  FORCE_INACTIVE: '강제 비활성',
+};
+
 export default function SellerDashboard() {
   // 판매자 본인 계정 상태 — 승인 전(대기/반려/정지)에는 매출·주문 등 데이터 조회 권한이 없어 403이 난다.
   const { data: myStatus } = useSellerMyStatusQuery();
@@ -183,7 +192,9 @@ export default function SellerDashboard() {
                   <p className="font-medium truncate">{p.name}</p>
                   <p className="text-xs text-gray-500">{p.categoryNames.join(', ')}</p>
                 </div>
-                <span className="text-xs px-2 py-1 bg-gray-100 rounded">{p.status}</span>
+                <span className="text-xs px-2 py-1 bg-gray-100 rounded">
+                  {PRODUCT_STATUS_LABELS[p.status] ?? p.status}
+                </span>
               </div>
             ))}
           </div>
