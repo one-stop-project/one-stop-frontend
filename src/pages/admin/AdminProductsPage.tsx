@@ -7,6 +7,7 @@ import {
 } from '@/hooks/queries/useAdminQuery';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import RejectReasonModal from '@/components/admin/RejectReasonModal';
 
 const STATUS_COLORS: Record<string, string> = {
   APPROVE_REQUESTED: 'bg-yellow-100 text-yellow-700',
@@ -30,6 +31,8 @@ export default function AdminProductsPage() {
   const { data, isLoading, isError } = useAdminProductsQuery(page, 20);
   const approveMutation = useApproveProductMutation();
   const rejectMutation = useRejectProductMutation();
+  // 반려 사유 입력 모달 대상 상품 id. null이면 닫힘.
+  const [rejectProductId, setRejectProductId] = useState<number | null>(null);
 
   if (isLoading) return <PageSpinner />;
   if (isError) {
@@ -104,11 +107,7 @@ export default function AdminProductsPage() {
                           <Check size={16} />
                         </button>
                         <button
-                          onClick={() => {
-                            const reason = prompt('반려 사유를 입력하세요');
-                            if (reason)
-                              rejectMutation.mutate({ productId: p.productId, reason });
-                          }}
+                          onClick={() => setRejectProductId(p.productId)}
                           className="p-1.5 text-red-600 hover:bg-red-50 rounded"
                           title="반려"
                         >
@@ -146,6 +145,20 @@ export default function AdminProductsPage() {
           </button>
         </div>
       )}
+
+      <RejectReasonModal
+        isOpen={rejectProductId !== null}
+        title="상품 반려"
+        isSubmitting={rejectMutation.isPending}
+        onClose={() => setRejectProductId(null)}
+        onSubmit={(reason) => {
+          if (rejectProductId === null) return;
+          rejectMutation.mutate(
+            { productId: rejectProductId, reason },
+            { onSuccess: () => setRejectProductId(null) },
+          );
+        }}
+      />
     </div>
   );
 }

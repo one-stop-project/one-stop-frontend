@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { useAdminSellersQuery, useApproveSellerMutation } from '@/hooks/queries/useAdminQuery';
 import { adminApi } from '@/domains/admin/adminApi';
@@ -5,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import RejectReasonModal from '@/components/admin/RejectReasonModal';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
@@ -24,18 +26,24 @@ export default function AdminSellersPage() {
   const { data, isLoading } = useAdminSellersQuery();
   const approveMutation = useApproveSellerMutation();
   const queryClient = useQueryClient();
+  // 반려 사유 입력 모달 대상 판매자 id. null이면 닫힘.
+  const [rejectSellerId, setRejectSellerId] = useState<number | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   if (isLoading) return <PageSpinner />;
 
-  const handleReject = async (sellerId: number) => {
-    const reason = prompt('반려 사유를 입력하세요');
-    if (!reason) return;
+  const handleReject = async (reason: string) => {
+    if (rejectSellerId === null) return;
+    setIsRejecting(true);
     try {
-      await adminApi.rejectSeller(sellerId, reason);
+      await adminApi.rejectSeller(rejectSellerId, reason);
       queryClient.invalidateQueries({ queryKey: ['admin'] });
       toast.success('판매자가 반려되었습니다.');
+      setRejectSellerId(null);
     } catch {
       // 에러는 인터셉터가 처리
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -78,7 +86,7 @@ export default function AdminSellersPage() {
                           <Check size={16} />
                         </button>
                         <button
-                          onClick={() => handleReject(s.sellerId)}
+                          onClick={() => setRejectSellerId(s.sellerId)}
                           className="p-1.5 text-red-600 hover:bg-red-50 rounded"
                           title="반려"
                         >
@@ -93,6 +101,14 @@ export default function AdminSellersPage() {
           </table>
         </div>
       )}
+
+      <RejectReasonModal
+        isOpen={rejectSellerId !== null}
+        title="판매자 반려"
+        isSubmitting={isRejecting}
+        onClose={() => setRejectSellerId(null)}
+        onSubmit={handleReject}
+      />
     </div>
   );
 }
