@@ -9,7 +9,6 @@ import { AdminUser } from '@/domains/admin/userAdminApi';
 import { PageSpinner } from '@/components/common/Spinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatDateTime } from '@/utils/format';
-import SecurityActionModal from '@/components/admin/SecurityActionModal';
 
 const ROLE_LABELS: Record<string, { text: string; color: string }> = {
   SUPER_ADMIN: { text: '최고관리자', color: 'bg-purple-100 text-purple-700' },
@@ -25,7 +24,6 @@ export default function AdminUsersPage() {
   const revoke = useRevokeAdminMutation();
 
   const [grantId, setGrantId] = useState('');
-  const [securityTarget, setSecurityTarget] = useState<Pick<AdminUser, 'id' | 'email'> | null>(null);
 
   const handleGrant = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,15 +102,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(u.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSecurityTarget({ id: u.id, email: u.email })}
-                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
-                          >
-                            보안 제재
-                          </button>
-                          {u.role === 'ADMIN' ? (
+                        {u.role === 'ADMIN' ? (
                           <button
                             onClick={() => handleRevoke(u)}
                             disabled={revoke.isPending}
@@ -123,7 +113,6 @@ export default function AdminUsersPage() {
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
                         )}
-                        </div>
                       </td>
                     </tr>
                   );
@@ -146,12 +135,6 @@ export default function AdminUsersPage() {
         </>
       )}
 
-      <SecurityActionModal
-        isOpen={securityTarget !== null}
-        userId={securityTarget?.id ?? null}
-        userEmail={securityTarget?.email ?? null}
-        onClose={() => setSecurityTarget(null)}
-      />
     </div>
   );
 }

@@ -1,245 +1,137 @@
 import { useState } from 'react';
-import { ShieldAlert, Coins, AlertTriangle, CheckCircle2, PlayCircle, Activity } from 'lucide-react';
-import {
-  usePointStatsQuery,
-  usePointInconsistenciesQuery,
-  useRunPointExpirationMutation,
-  useCriticalEventsQuery,
-  useHighRiskEventsQuery,
-  useAuditStatsByCategoryQuery,
-} from '@/hooks/queries/useAdminSystemQuery';
-import { SecuritySeverity, SecurityAuditLog } from '@/domains/admin/systemAdminApi';
-import { Spinner } from '@/components/common/Spinner';
-import { EmptyState } from '@/components/common/EmptyState';
-import { formatPrice, formatDateTime } from '@/utils/format';
+import { Activity, ShieldAlert, UserRoundSearch } from 'lucide-react';
+import AdminSecurityAuditPage from '@/pages/admin/AdminSecurityAuditPage';
+import SecurityActionModal from '@/components/admin/SecurityActionModal';
 
-const SEVERITY_COLOR: Record<SecuritySeverity, string> = {
-  CRITICAL: 'bg-red-100 text-red-700',
-  HIGH: 'bg-orange-100 text-orange-700',
-  MEDIUM: 'bg-yellow-100 text-yellow-700',
-  INFO: 'bg-gray-100 text-gray-600',
-};
+type SanctionableRole = 'BUYER' | 'SELLER';
 
-type AuditTab = 'critical' | 'high-risk';
+interface SecurityTarget {
+  id: number;
+  email: string;
+  role: SanctionableRole;
+}
 
 export default function AdminSystemPage() {
-  const { data: stats, isLoading: statsLoading } = usePointStatsQuery();
-  const { data: inconsistencies } = usePointInconsistenciesQuery(100);
-  const runExpire = useRunPointExpirationMutation();
+  const [targetId, setTargetId] = useState('');
+  const [targetEmail, setTargetEmail] = useState('');
+  const [targetRole, setTargetRole] = useState<SanctionableRole>('BUYER');
+  const [securityTarget, setSecurityTarget] = useState<SecurityTarget | null>(null);
 
-  const [tab, setTab] = useState<AuditTab>('critical');
-  const { data: critical, isLoading: criticalLoading } = useCriticalEventsQuery(24, 0, 50);
-  const { data: highRisk, isLoading: highRiskLoading } = useHighRiskEventsQuery(7, 0, 50);
-  const { data: categoryStats } = useAuditStatsByCategoryQuery(7);
+  const handleOpenSecurityAction = (event: React.FormEvent) => {
+    event.preventDefault();
+    const userId = Number(targetId);
+    if (!Number.isInteger(userId) || userId <= 0 || !targetEmail.trim()) return;
 
-  const events = tab === 'critical' ? critical : highRisk;
-  const eventsLoading = tab === 'critical' ? criticalLoading : highRiskLoading;
-
-  const handleRunExpire = () => {
-    if (!window.confirm('포인트 만료 처리를 지금 실행할까요? (기준일: 오늘)')) return;
-    runExpire.mutate(undefined);
+    setSecurityTarget({
+      id: userId,
+      email: targetEmail.trim(),
+      role: targetRole,
+    });
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">시스템 점검</h1>
-      <p className="text-sm text-gray-600 mb-6">
-        포인트 회계 정합성과 보안 감사 로그를 점검합니다. 최고관리자(SUPER_ADMIN) 전용입니다.
-      </p>
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="mb-8">
+        <div className="mb-2 flex items-center gap-2">
+          <ShieldAlert className="text-red-600" size={24} />
+          <h1 className="text-2xl font-bold text-gray-900">시스템 점검</h1>
+        </div>
+        <p className="text-sm text-gray-600">
+          서버 상태와 보안 이벤트를 점검하고 Buyer/Seller 계정에 필요한 보안 조치를 실행합니다.
+        </p>
+      </div>
 
-      {/* ── 서버 모니터링 ── */}
       <section className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="mb-4 flex items-center gap-2">
           <Activity size={18} className="text-blue-600" />
           <h2 className="font-semibold text-gray-900">서버 모니터링 (JVM)</h2>
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Main</p>
-            <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
-              <iframe
-                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-main&var-instance=10.0.18.198%3A8081&refresh=30s"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-              />
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 mb-2 font-medium">EC2 Dummy</p>
-            <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height: 600 }}>
-              <iframe
-                src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-dummy&var-instance=10.0.22.194%3A8081&refresh=30s"
-                width="100%"
-                height="100%"
-                frameBorder="0"
-              />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <MonitoringPanel
+            title="EC2 Main"
+            src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-main&var-instance=10.0.18.198%3A8081&refresh=30s"
+          />
+          <MonitoringPanel
+            title="EC2 Dummy"
+            src="https://onestop1.duckdns.org/grafana/d/adsjcs8/jvm-micrometer?orgId=1&kiosk&var-DS_PROMETHEUS=cfps5v9jx6fb4e&var-application=ec2-dummy&var-instance=10.0.22.194%3A8081&refresh=30s"
+          />
         </div>
       </section>
 
-      {/* ── 포인트 회계 점검 ── */}
-      <section className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <Coins size={18} className="text-blue-600" />
-          <h2 className="font-semibold text-gray-900">포인트 회계</h2>
+      <section className="mb-10" aria-labelledby="security-action-heading">
+        <div className="mb-4 flex items-center gap-2">
+          <UserRoundSearch size={18} className="text-red-600" />
+          <h2 id="security-action-heading" className="font-semibold text-gray-900">유저 보안 제재</h2>
         </div>
-
-        {statsLoading ? (
-          <div className="py-10 flex justify-center"><Spinner /></div>
-        ) : stats ? (
-          <>
-            {/* 정합성 배너 */}
-            <div
-              className={`flex items-center gap-2 rounded-lg px-4 py-3 mb-4 text-sm ${
-                stats.isConsistent ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-              }`}
+        <form onSubmit={handleOpenSecurityAction} className="card p-5">
+          <p className="mb-4 text-xs text-gray-500">
+            보안 제재 대상은 Buyer와 Seller 계정으로 제한됩니다.
+          </p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_180px_minmax(0,1fr)_auto]">
+            <label>
+              <span className="sr-only">회원 역할</span>
+              <select
+                className="input-field"
+                value={targetRole}
+                onChange={(event) => setTargetRole(event.target.value as SanctionableRole)}
+              >
+                <option value="BUYER">Buyer</option>
+                <option value="SELLER">Seller</option>
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">회원 ID</span>
+              <input
+                type="number"
+                min={1}
+                required
+                className="input-field"
+                placeholder="회원 ID"
+                value={targetId}
+                onChange={(event) => setTargetId(event.target.value)}
+              />
+            </label>
+            <label>
+              <span className="sr-only">회원 이메일</span>
+              <input
+                type="email"
+                required
+                className="input-field"
+                placeholder="회원 이메일"
+                value={targetEmail}
+                onChange={(event) => setTargetEmail(event.target.value)}
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
             >
-              {stats.isConsistent ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-              {stats.isConsistent
-                ? '회계 정합성 정상 — 발행과 잔액이 일치합니다.'
-                : `회계 불일치 감지 — 차액 ${formatPrice(stats.accountingDiff)}P`}
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-              <PointStat label="총 충전" value={stats.totalCharged} />
-              <PointStat label="총 적립" value={stats.totalEarned} />
-              <PointStat label="총 사용" value={stats.totalUsed} />
-              <PointStat label="총 환불" value={stats.totalRefunded} />
-              <PointStat label="총 만료" value={stats.totalExpired} />
-              <PointStat label="현재 잔액 합계" value={stats.totalLiveBalance} accent="text-blue-600" />
-            </div>
-
-            <button onClick={handleRunExpire} disabled={runExpire.isPending} className="btn-secondary text-sm inline-flex items-center gap-1.5">
-              <PlayCircle size={16} />
-              {runExpire.isPending ? '실행 중...' : '포인트 만료 수동 실행'}
+              보안 제재
             </button>
-
-            {/* 잔액 불일치 사용자 */}
-            {inconsistencies && inconsistencies.length > 0 && (
-              <div className="card overflow-x-auto mt-5">
-                <p className="px-4 py-3 text-sm font-medium text-red-600 border-b border-gray-200">
-                  잔액 불일치 사용자 {inconsistencies.length}명
-                </p>
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">회원</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 uppercase">기록 잔액</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 uppercase">실제 합계</th>
-                      <th className="text-right px-4 py-2 text-xs font-medium text-gray-500 uppercase">차액</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {inconsistencies.map((r) => (
-                      <tr key={r.userId} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 text-sm text-gray-700">#{r.userId}</td>
-                        <td className="px-4 py-2 text-sm text-right">{formatPrice(r.balance)}P</td>
-                        <td className="px-4 py-2 text-sm text-right">{formatPrice(r.remainingAmountSum)}P</td>
-                        <td className="px-4 py-2 text-sm text-right font-medium text-red-600">{formatPrice(r.diff)}P</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        ) : null}
+          </div>
+        </form>
       </section>
 
-      {/* ── 보안 감사 ── */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <ShieldAlert size={18} className="text-blue-600" />
-          <h2 className="font-semibold text-gray-900">보안 감사</h2>
-        </div>
+      <AdminSecurityAuditPage embedded />
 
-        {/* 카테고리별 집계 (최근 7일) */}
-        {categoryStats && Object.keys(categoryStats).length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5">
-            {Object.entries(categoryStats).map(([cat, count]) => (
-              <span key={cat} className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full">
-                {cat} <span className="font-semibold">{count.toLocaleString()}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* 탭 */}
-        <div className="flex gap-2 mb-4">
-          <TabButton active={tab === 'critical'} onClick={() => setTab('critical')}>
-            치명 (최근 24시간)
-          </TabButton>
-          <TabButton active={tab === 'high-risk'} onClick={() => setTab('high-risk')}>
-            고위험 (최근 7일)
-          </TabButton>
-        </div>
-
-        {eventsLoading ? (
-          <div className="py-10 flex justify-center"><Spinner /></div>
-        ) : !events || events.content.length === 0 ? (
-          <EmptyState icon={<ShieldAlert size={36} />} title="해당 기간의 이벤트가 없습니다" />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">위협도</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">이벤트</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">행위자</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">대상/요청</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">IP</th>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 uppercase">시각</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {events.content.map((e: SecurityAuditLog) => (
-                  <tr key={e.id} className="hover:bg-gray-50 align-top">
-                    <td className="px-4 py-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${SEVERITY_COLOR[e.severity] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {e.severity}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{e.eventType}</td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
-                      {e.actorEmail ?? (e.actorUserId ? `#${e.actorUserId}` : '비인증')}
-                      {e.actorRole ? <span className="text-gray-400"> · {e.actorRole}</span> : null}
-                    </td>
-                    <td className="px-4 py-2 text-xs text-gray-500 max-w-xs truncate">
-                      {e.requestUri ?? e.targetResource ?? '-'}
-                    </td>
-                    <td className="px-4 py-2 text-xs text-gray-500">{e.clientIp ?? '-'}</td>
-                    <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">{formatDateTime(e.occurredAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <SecurityActionModal
+        isOpen={securityTarget !== null}
+        userId={securityTarget?.id ?? null}
+        userEmail={securityTarget?.email ?? null}
+        userRole={securityTarget?.role ?? 'BUYER'}
+        onClose={() => setSecurityTarget(null)}
+      />
     </div>
   );
 }
 
-function PointStat({ label, value, accent = 'text-gray-900' }: { label: string; value: number; accent?: string }) {
+function MonitoringPanel({ title, src }: { title: string; src: string }) {
   return (
-    <div className="card p-4">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className={`text-lg font-bold ${accent}`}>{formatPrice(value)}<span className="text-xs font-normal text-gray-400">P</span></p>
+    <div>
+      <p className="mb-2 text-xs font-medium text-gray-500">{title}</p>
+      <div className="overflow-hidden rounded-lg border border-gray-200" style={{ height: 600 }}>
+        <iframe src={src} title={`${title} JVM 모니터링`} width="100%" height="100%" frameBorder="0" />
+      </div>
     </div>
-  );
-}
-
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm rounded-lg font-medium ${
-        active ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-      }`}
-    >
-      {children}
-    </button>
   );
 }
