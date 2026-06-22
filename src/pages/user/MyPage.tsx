@@ -17,7 +17,7 @@ export default function MyPage() {
   const updateMutation = useUpdateMyInfoMutation();
   const isBuyer = useAuthStore((s) => s.hasRole)('BUYER'); // 주문·리뷰·포인트·구독은 구매자 전용
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', address: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', detailAddress: '' });
 
   if (isError) {
     return (
@@ -29,7 +29,12 @@ export default function MyPage() {
   if (isLoading || !me) return <PageSpinner />;
 
   const startEditing = () => {
-    setForm({ name: me.name, phone: me.phone, address: me.address });
+    setForm({
+      name: me.name,
+      phone: me.phone,
+      address: me.address,
+      detailAddress: me.detailAddress ?? '',
+    });
     setEditing(true);
   };
 
@@ -131,6 +136,13 @@ export default function MyPage() {
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                   />
                 </Field>
+                <Field label="상세주소">
+                  <input
+                    className="input-field"
+                    value={form.detailAddress}
+                    onChange={(e) => setForm({ ...form, detailAddress: e.target.value })}
+                  />
+                </Field>
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => setEditing(false)} className="btn-secondary flex-1">
                     취소
@@ -149,6 +161,7 @@ export default function MyPage() {
                 <Row label="이름" value={me.name} />
                 <Row label="전화번호" value={formatPhone(me.phone)} />
                 <Row label="주소" value={me.address} />
+                {me.detailAddress?.trim() && <Row label="상세주소" value={me.detailAddress} />}
               </dl>
             )}
           </section>
