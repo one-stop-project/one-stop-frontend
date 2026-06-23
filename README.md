@@ -1,4 +1,4 @@
-# 🛍️ One-Stop Frontend
+# 🛒 One-Stop Frontend
 
 > 진심을 담은 쇼핑, One-Stop 이커머스 프론트엔드
 > React 18 + TypeScript + Vite + TanStack Query
